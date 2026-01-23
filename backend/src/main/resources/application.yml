@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: ordemservico
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fixit_db
+    username: fixit_user
+    password: fixit_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: true
+  messages:
+    basename: messages
+    encoding: UTF-8
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:h2:mem:fixit_db
+    username: sa
+    password: password
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: true
+  h2:
+    console:
+      enabled: true

@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: fixit-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: fixit_db
+      POSTGRES_USER: fixit_user
+      POSTGRES_PASSWORD: fixit_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fixit-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U fixit_user -d fixit_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fixit-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/fixit_db
+      - SPRING_DATASOURCE_USERNAME=fixit_user
+      - SPRING_DATASOURCE_PASSWORD=fixit_password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_SHOW_SQL=false
+      - JWT_SECRET=your-secret-key-change-this-in-production-min-256-bits
+      - JWT_EXPIRATION=86400000
+    networks:
+      - fixit-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  n8n:
+    image: n8nio/n8n
+    container_name: fixit-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - fixit-network
+    depends_on:
+      - postgres
+      - backend
+
+networks:
+  fixit-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  n8n_data:

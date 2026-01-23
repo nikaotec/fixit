@@ -1,0 +1,84 @@
+{
+  "name": "Ordem de Servico Workflows",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ordem-criada",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook Ordem Criada",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "return items;"
+      },
+      "name": "Mock Push Notification",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "checklist-finalizado",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Webhook Checklist Finalizado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "content": "<h1>Relatorio de Manutencao</h1><p>Ordem: {{ $json[\"body\"][\"id\"] }}</p>",
+        "options": {}
+      },
+      "name": "Generate PDF",
+      "type": "n8n-nodes-base.htmlToPdf",
+      "typeVersion": 1,
+      "position": [
+        300,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Ordem Criada": {
+      "main": [
+        [
+          {
+            "node": "Mock Push Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Checklist Finalizado": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
