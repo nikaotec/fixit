@@ -140,6 +140,24 @@ abstract class AppLocalizations {
   /// **'Orders'**
   String get ordersTab;
 
+  /// No description provided for @inventoryTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get inventoryTab;
+
+  /// No description provided for @notificationsTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get notificationsTab;
+
+  /// No description provided for @profileTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profileTab;
+
   /// No description provided for @settingsTab.
   ///
   /// In en, this message translates to:
@@ -331,6 +349,528 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Main Dashboard'**
   String get mainDashboard;
+
+  /// No description provided for @createNewClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New Client'**
+  String get createNewClient;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @individual.
+  ///
+  /// In en, this message translates to:
+  /// **'Individual'**
+  String get individual;
+
+  /// No description provided for @corporate.
+  ///
+  /// In en, this message translates to:
+  /// **'Corporate'**
+  String get corporate;
+
+  /// No description provided for @basicInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Information'**
+  String get basicInformation;
+
+  /// No description provided for @fullName.
+  ///
+  /// In en, this message translates to:
+  /// **'Full Name / Company Name'**
+  String get fullName;
+
+  /// No description provided for @fullNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. John Doe or Acme Corp'**
+  String get fullNameHint;
+
+  /// No description provided for @taxId.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax ID (CPF / CNPJ)'**
+  String get taxId;
+
+  /// No description provided for @taxIdHint.
+  ///
+  /// In en, this message translates to:
+  /// **'000.000.000-00'**
+  String get taxIdHint;
+
+  /// No description provided for @emailAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get emailAddress;
+
+  /// No description provided for @emailHint.
+  ///
+  /// In en, this message translates to:
+  /// **'client@email.com'**
+  String get emailHint;
+
+  /// No description provided for @phoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone Number'**
+  String get phoneNumber;
+
+  /// No description provided for @phoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'+55 (11) 99999-9999'**
+  String get phoneHint;
+
+  /// No description provided for @locationDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Location Details'**
+  String get locationDetails;
+
+  /// No description provided for @zipCode.
+  ///
+  /// In en, this message translates to:
+  /// **'ZIP Code (CEP)'**
+  String get zipCode;
+
+  /// No description provided for @zipCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'00000-000'**
+  String get zipCodeHint;
+
+  /// No description provided for @lookup.
+  ///
+  /// In en, this message translates to:
+  /// **'Lookup'**
+  String get lookup;
+
+  /// No description provided for @street.
+  ///
+  /// In en, this message translates to:
+  /// **'Street'**
+  String get street;
+
+  /// No description provided for @streetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Main St'**
+  String get streetHint;
+
+  /// No description provided for @number.
+  ///
+  /// In en, this message translates to:
+  /// **'No.'**
+  String get number;
+
+  /// No description provided for @numberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'123'**
+  String get numberHint;
+
+  /// No description provided for @neighborhood.
+  ///
+  /// In en, this message translates to:
+  /// **'Neighborhood'**
+  String get neighborhood;
+
+  /// No description provided for @neighborhoodHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Downtown'**
+  String get neighborhoodHint;
+
+  /// No description provided for @city.
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get city;
+
+  /// No description provided for @cityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'San Francisco'**
+  String get cityHint;
+
+  /// No description provided for @primaryContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Contact'**
+  String get primaryContact;
+
+  /// No description provided for @optional.
+  ///
+  /// In en, this message translates to:
+  /// **'OPTIONAL'**
+  String get optional;
+
+  /// No description provided for @contactName.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Name'**
+  String get contactName;
+
+  /// No description provided for @contactNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Person to talk to'**
+  String get contactNameHint;
+
+  /// No description provided for @position.
+  ///
+  /// In en, this message translates to:
+  /// **'Position / Role'**
+  String get position;
+
+  /// No description provided for @positionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Manager, Owner'**
+  String get positionHint;
+
+  /// No description provided for @internalNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal Notes'**
+  String get internalNotes;
+
+  /// No description provided for @internalNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add specific instructions or history about this client...'**
+  String get internalNotesHint;
+
+  /// No description provided for @saveClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Client'**
+  String get saveClient;
+
+  /// No description provided for @clients.
+  ///
+  /// In en, this message translates to:
+  /// **'Clients'**
+  String get clients;
+
+  /// No description provided for @searchClients.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or tax ID'**
+  String get searchClients;
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get all;
+
+  /// No description provided for @active.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get active;
+
+  /// No description provided for @region.
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get region;
+
+  /// No description provided for @overdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get overdue;
+
+  /// No description provided for @addClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Client'**
+  String get addClient;
+
+  /// No description provided for @noClientsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No clients found'**
+  String get noClientsFound;
+
+  /// No description provided for @noClientsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your client list is empty. Start adding your first individual or corporate client to manage their equipment and service orders.'**
+  String get noClientsMessage;
+
+  /// No description provided for @addFirstClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Add First Client'**
+  String get addFirstClient;
+
+  /// No description provided for @addEquipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Equipment'**
+  String get addEquipment;
+
+  /// No description provided for @editEquipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Equipment'**
+  String get editEquipment;
+
+  /// No description provided for @equipmentDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment Details'**
+  String get equipmentDetails;
+
+  /// No description provided for @equipmentDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Register a new asset to the Fixit database.'**
+  String get equipmentDetailsSubtitle;
+
+  /// No description provided for @equipmentName.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment Name'**
+  String get equipmentName;
+
+  /// No description provided for @equipmentNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Industrial HVAC Unit 01'**
+  String get equipmentNameHint;
+
+  /// No description provided for @serialCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Serial Code'**
+  String get serialCode;
+
+  /// No description provided for @serialCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. SN-99234-XYZ'**
+  String get serialCodeHint;
+
+  /// No description provided for @clientLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Client / Location'**
+  String get clientLocation;
+
+  /// No description provided for @selectClient.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Client'**
+  String get selectClient;
+
+  /// No description provided for @geoCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Geographic Coordinates'**
+  String get geoCoordinates;
+
+  /// No description provided for @latitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Latitude'**
+  String get latitude;
+
+  /// No description provided for @longitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Longitude'**
+  String get longitude;
+
+  /// No description provided for @useCurrentLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my current location'**
+  String get useCurrentLocation;
+
+  /// No description provided for @uniqueQrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unique QR Label'**
+  String get uniqueQrLabel;
+
+  /// No description provided for @generateQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate'**
+  String get generateQr;
+
+  /// No description provided for @instantTechAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate for instant tech access'**
+  String get instantTechAccess;
+
+  /// No description provided for @saveEquipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Equipment'**
+  String get saveEquipment;
+
+  /// No description provided for @equipmentNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter equipment name'**
+  String get equipmentNameRequired;
+
+  /// No description provided for @qrCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'QR Code'**
+  String get qrCodeTitle;
+
+  /// No description provided for @qrCodeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment label: {name}'**
+  String qrCodeSubtitle(Object name);
+
+  /// No description provided for @shareQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Share QR Code'**
+  String get shareQrCode;
+
+  /// No description provided for @printQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Print QR Code'**
+  String get printQrCode;
+
+  /// No description provided for @errorSharingQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to share the QR Code.'**
+  String get errorSharingQrCode;
+
+  /// No description provided for @errorPrintingQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to print the QR Code.'**
+  String get errorPrintingQrCode;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @equipmentNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment: {name}'**
+  String equipmentNameLabel(Object name);
+
+  /// No description provided for @locationServicesDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Location services are disabled.'**
+  String get locationServicesDisabled;
+
+  /// No description provided for @locationPermissionsDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permissions are denied.'**
+  String get locationPermissionsDenied;
+
+  /// No description provided for @locationPermissionsDeniedForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permissions are permanently denied, we cannot request permissions.'**
+  String get locationPermissionsDeniedForever;
+
+  /// No description provided for @errorGettingLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Error getting location: {error}'**
+  String errorGettingLocation(Object error);
+
+  /// No description provided for @errorSavingEquipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving equipment: {error}'**
+  String errorSavingEquipment(Object error);
+
+  /// No description provided for @deleteEquipmentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Equipment?'**
+  String get deleteEquipmentTitle;
+
+  /// No description provided for @deleteEquipmentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this equipment? This action cannot be undone.'**
+  String get deleteEquipmentBody;
+
+  /// No description provided for @deleteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteAction;
+
+  /// No description provided for @errorDeletingEquipment.
+  ///
+  /// In en, this message translates to:
+  /// **'Error deleting: {error}'**
+  String errorDeletingEquipment(Object error);
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @equipmentInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment Inventory'**
+  String get equipmentInventory;
+
+  /// No description provided for @searchEquipmentPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or serial...'**
+  String get searchEquipmentPlaceholder;
+
+  /// No description provided for @byClient.
+  ///
+  /// In en, this message translates to:
+  /// **'By Client'**
+  String get byClient;
+
+  /// No description provided for @category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get category;
+
+  /// No description provided for @status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get status;
+
+  /// No description provided for @itemsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items found'**
+  String itemsFound(int count);
 }
 
 class _AppLocalizationsDelegate

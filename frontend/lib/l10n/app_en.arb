@@ -6,6 +6,9 @@
   "loginButton": "Login",
   "dashboardTitle": "Dashboard",
   "ordersTab": "Orders",
+  "inventoryTab": "Inventory",
+  "notificationsTab": "Alerts",
+  "profileTab": "Profile",
   "settingsTab": "Settings",
   "equipmentLabel": "Equipment",
   "scanQrCode": "Scan QR Code",
@@ -37,5 +40,124 @@
   "statusOverdue": "Overdue",
   "createEquipment": "Create Equipment",
   "createChecklist": "Create Checklist",
-  "mainDashboard": "Main Dashboard"
+  "mainDashboard": "Main Dashboard",
+  "createNewClient": "Create New Client",
+  "cancel": "Cancel",
+  "individual": "Individual",
+  "corporate": "Corporate",
+  "basicInformation": "Basic Information",
+  "fullName": "Full Name / Company Name",
+  "fullNameHint": "e.g. John Doe or Acme Corp",
+  "taxId": "Tax ID (CPF / CNPJ)",
+  "taxIdHint": "000.000.000-00",
+  "emailAddress": "Email Address",
+  "emailHint": "client@email.com",
+  "phoneNumber": "Phone Number",
+  "phoneHint": "+55 (11) 99999-9999",
+  "locationDetails": "Location Details",
+  "zipCode": "ZIP Code (CEP)",
+  "zipCodeHint": "00000-000",
+  "lookup": "Lookup",
+  "street": "Street",
+  "streetHint": "Main St",
+  "number": "No.",
+  "numberHint": "123",
+  "neighborhood": "Neighborhood",
+  "neighborhoodHint": "Downtown",
+  "city": "City",
+  "cityHint": "San Francisco",
+  "primaryContact": "Primary Contact",
+  "optional": "OPTIONAL",
+  "contactName": "Contact Name",
+  "contactNameHint": "Person to talk to",
+  "position": "Position / Role",
+  "positionHint": "e.g. Manager, Owner",
+  "internalNotes": "Internal Notes",
+  "internalNotesHint": "Add specific instructions or history about this client...",
+  "saveClient": "Save Client",
+  "clients": "Clients",
+  "searchClients": "Search by name or tax ID",
+  "all": "All",
+  "active": "Active",
+  "region": "Region",
+  "overdue": "Overdue",
+  "addClient": "Add Client",
+  "noClientsFound": "No clients found",
+  "noClientsMessage": "Your client list is empty. Start adding your first individual or corporate client to manage their equipment and service orders.",
+  "addFirstClient": "Add First Client",
+  "addEquipment": "Add Equipment",
+  "editEquipment": "Edit Equipment",
+  "equipmentDetails": "Equipment Details",
+  "equipmentDetailsSubtitle": "Register a new asset to the Fixit database.",
+  "equipmentName": "Equipment Name",
+  "equipmentNameHint": "e.g. Industrial HVAC Unit 01",
+  "serialCode": "Serial Code",
+  "serialCodeHint": "e.g. SN-99234-XYZ",
+  "clientLocation": "Client / Location",
+  "selectClient": "Select Client",
+  "geoCoordinates": "Geographic Coordinates",
+  "latitude": "Latitude",
+  "longitude": "Longitude",
+  "useCurrentLocation": "Use my current location",
+  "uniqueQrLabel": "Unique QR Label",
+  "generateQr": "Generate",
+  "instantTechAccess": "Generate for instant tech access",
+  "saveEquipment": "Save Equipment",
+  "equipmentNameRequired": "Please enter equipment name",
+  "qrCodeTitle": "QR Code",
+  "qrCodeSubtitle": "Equipment label: {name}",
+  "@qrCodeSubtitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "shareQrCode": "Share QR Code",
+  "printQrCode": "Print QR Code",
+  "errorSharingQrCode": "Unable to share the QR Code.",
+  "errorPrintingQrCode": "Unable to print the QR Code.",
+  "ok": "OK",
+  "equipmentNameLabel": "Equipment: {name}",
+  "@equipmentNameLabel": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "locationServicesDisabled": "Location services are disabled.",
+  "locationPermissionsDenied": "Location permissions are denied.",
+  "locationPermissionsDeniedForever": "Location permissions are permanently denied, we cannot request permissions.",
+  "errorGettingLocation": "Error getting location: {error}",
+  "@errorGettingLocation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "errorSavingEquipment": "Error saving equipment: {error}",
+  "@errorSavingEquipment": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deleteEquipmentTitle": "Delete Equipment?",
+  "deleteEquipmentBody": "Are you sure you want to delete this equipment? This action cannot be undone.",
+  "deleteAction": "Delete",
+  "errorDeletingEquipment": "Error deleting: {error}",
+  "@errorDeletingEquipment": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "save": "Save",
+  "equipmentInventory": "Equipment Inventory",
+  "searchEquipmentPlaceholder": "Search by name or serial...",
+  "byClient": "By Client",
+  "category": "Category",
+  "status": "Status",
+  "itemsFound": "{count} items found",
+  "@itemsFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/order.dart';
 import 'package:signature/signature.dart';
 import 'dart:typed_data';
+import '../theme/app_colors.dart';
+import '../theme/app_typography.dart';
 
 class ChecklistScreen extends StatefulWidget {
   final Order order;
@@ -22,27 +24,82 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(title: Text("Checklist: ${widget.order.checklist.nome}")),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            const SizedBox(height: 16),
             ...widget.order.checklist.itens.map((item) {
-              return CheckboxListTile(
-                title: Text(item.descricao),
-                value: _answers[item.id] ?? false,
-                onChanged: (val) {
-                  setState(() {
-                    _answers[item.id] = val!;
-                  });
-                },
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDarkTheme : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.borderDefaultDark
+                        : AppColors.borderLight,
+                  ),
+                  boxShadow: isDark
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: AppColors.shadow.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                ),
+                child: CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(item.descricao),
+                  value: _answers[item.id] ?? false,
+                  onChanged: (val) {
+                    setState(() {
+                      _answers[item.id] = val!;
+                    });
+                  },
+                ),
               );
             }).toList(),
-            SizedBox(height: 20),
-            Text("Signature Required"),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  "Signature Required",
+                  style: AppTypography.subtitle1.copyWith(
+                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
               height: 200,
-              decoration: BoxDecoration(border: Border.all(color: Colors.grey)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color:
+                      isDark ? AppColors.borderDefaultDark : AppColors.borderLight,
+                ),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: AppColors.shadow.withOpacity(0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+              ),
               child: Signature(
                 controller: _signatureController,
                 backgroundColor: Colors.white,

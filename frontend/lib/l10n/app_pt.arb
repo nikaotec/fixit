@@ -6,6 +6,9 @@
   "loginButton": "Entrar",
   "dashboardTitle": "Painel",
   "ordersTab": "Ordens",
+  "inventoryTab": "Inventário",
+  "notificationsTab": "Alertas",
+  "profileTab": "Perfil",
   "settingsTab": "Configurações",
   "equipmentLabel": "Equipamento",
   "scanQrCode": "Escanear QR Code",
@@ -37,5 +40,124 @@
   "statusOverdue": "Atrasada",
   "createEquipment": "Criar Equipamento",
   "createChecklist": "Criar Checklist",
-  "mainDashboard": "Painel Principal"
+  "mainDashboard": "Painel Principal",
+  "createNewClient": "Criar Novo Cliente",
+  "cancel": "Cancelar",
+  "individual": "Individual",
+  "corporate": "Corporativo",
+  "basicInformation": "Informações Básicas",
+  "fullName": "Nome Completo / Razão Social",
+  "fullNameHint": "ex. João Silva ou Acme Corp",
+  "taxId": "CPF / CNPJ",
+  "taxIdHint": "000.000.000-00",
+  "emailAddress": "Endereço de E-mail",
+  "emailHint": "cliente@email.com",
+  "phoneNumber": "Telefone",
+  "phoneHint": "+55 (11) 99999-9999",
+  "locationDetails": "Detalhes de Localização",
+  "zipCode": "CEP",
+  "zipCodeHint": "00000-000",
+  "lookup": "Buscar",
+  "street": "Rua",
+  "streetHint": "Rua Principal",
+  "number": "Nº",
+  "numberHint": "123",
+  "neighborhood": "Bairro",
+  "neighborhoodHint": "Centro",
+  "city": "Cidade",
+  "cityHint": "São Paulo",
+  "primaryContact": "Contato Principal",
+  "optional": "OPCIONAL",
+  "contactName": "Nome do Contato",
+  "contactNameHint": "Pessoa para contato",
+  "position": "Cargo / Função",
+  "positionHint": "ex. Gerente, Proprietário",
+  "internalNotes": "Notas Internas",
+  "internalNotesHint": "Adicione instruções específicas ou histórico sobre este cliente...",
+  "saveClient": "Salvar Cliente",
+  "clients": "Clientes",
+  "searchClients": "Buscar por nome ou CPF/CNPJ",
+  "all": "Todos",
+  "active": "Ativos",
+  "region": "Região",
+  "overdue": "Atrasados",
+  "addClient": "Adicionar Cliente",
+  "noClientsFound": "Nenhum cliente encontrado",
+  "noClientsMessage": "Sua lista de clientes está vazia. Comece adicionando seu primeiro cliente individual ou corporativo para gerenciar seus equipamentos e ordens de serviço.",
+  "addFirstClient": "Adicionar Primeiro Cliente",
+  "addEquipment": "Adicionar Equipamento",
+  "editEquipment": "Editar Equipamento",
+  "equipmentDetails": "Detalhes do Equipamento",
+  "equipmentDetailsSubtitle": "Registre um novo ativo no banco de dados Fixit.",
+  "equipmentName": "Nome do Equipamento",
+  "equipmentNameHint": "ex. Unidade HVAC Industrial 01",
+  "serialCode": "Código Serial",
+  "serialCodeHint": "ex. SN-99234-XYZ",
+  "clientLocation": "Cliente / Localização",
+  "selectClient": "Selecionar Cliente",
+  "geoCoordinates": "Coordenadas Geográficas",
+  "latitude": "Latitude",
+  "longitude": "Longitude",
+  "useCurrentLocation": "Usar minha localização atual",
+  "uniqueQrLabel": "Etiqueta QR Única",
+  "generateQr": "Gerar",
+  "instantTechAccess": "Gerar para acesso técnico instantâneo",
+  "saveEquipment": "Salvar Equipamento",
+  "equipmentNameRequired": "Por favor, informe o nome do equipamento",
+  "qrCodeTitle": "QR Code",
+  "qrCodeSubtitle": "Etiqueta do equipamento: {name}",
+  "@qrCodeSubtitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "shareQrCode": "Compartilhar QR Code",
+  "printQrCode": "Imprimir QR Code",
+  "errorSharingQrCode": "Não foi possível compartilhar o QR Code.",
+  "errorPrintingQrCode": "Não foi possível imprimir o QR Code.",
+  "ok": "OK",
+  "equipmentNameLabel": "Equipamento: {name}",
+  "@equipmentNameLabel": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "locationServicesDisabled": "Os serviços de localização estão desativados.",
+  "locationPermissionsDenied": "As permissões de localização foram negadas.",
+  "locationPermissionsDeniedForever": "As permissões de localização foram negadas permanentemente e não podem ser solicitadas.",
+  "errorGettingLocation": "Erro ao obter localização: {error}",
+  "@errorGettingLocation": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "errorSavingEquipment": "Erro ao salvar equipamento: {error}",
+  "@errorSavingEquipment": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "deleteEquipmentTitle": "Excluir equipamento?",
+  "deleteEquipmentBody": "Tem certeza de que deseja excluir este equipamento? Esta ação não pode ser desfeita.",
+  "deleteAction": "Excluir",
+  "errorDeletingEquipment": "Erro ao excluir: {error}",
+  "@errorDeletingEquipment": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "save": "Salvar",
+  "equipmentInventory": "Inventário de Equipamentos",
+  "searchEquipmentPlaceholder": "Buscar por nome ou serial...",
+  "byClient": "Por Cliente",
+  "category": "Categoria",
+  "status": "Status",
+  "itemsFound": "{count} itens encontrados",
+  "@itemsFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

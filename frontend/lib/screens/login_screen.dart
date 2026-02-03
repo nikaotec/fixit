@@ -124,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: Alignment.centerRight,
                           child: IconButton(
                             onPressed: () {
-                              // TODO: Implement language switching
+                              _showLanguageSelector(context);
                             },
                             icon: const Icon(Icons.language),
                             color: isDark
@@ -142,6 +142,25 @@ class _LoginScreenState extends State<LoginScreen> {
                             constraints: const BoxConstraints(maxWidth: 480),
                             padding: EdgeInsets.symmetric(
                               horizontal: isSmallScreen ? 24 : 32,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  isDark ? AppColors.surfaceDarkTheme : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.borderDefaultDark
+                                    : AppColors.borderLight,
+                              ),
+                              boxShadow: isDark
+                                  ? []
+                                  : [
+                                      BoxShadow(
+                                        color: AppColors.shadow.withOpacity(0.08),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
                             ),
                             child: Form(
                               key: _formKey,
@@ -305,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Implement forgot password
+                _showForgotPassword(context);
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
@@ -542,6 +561,60 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.borderDefaultDark : AppColors.slate300,
         borderRadius: BorderRadius.circular(999),
+      ),
+    );
+  }
+
+  void _showLanguageSelector(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.language),
+                title: const Text('Português'),
+                onTap: () {
+                  userProvider.setLocale(const Locale('pt'));
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.language),
+                title: const Text('English'),
+                onTap: () {
+                  userProvider.setLocale(const Locale('en'));
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showForgotPassword(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Forgot Password'),
+        content: const Text(
+          'Password reset is managed by your administrator for now. '
+          'Contact your manager to reset your credentials.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

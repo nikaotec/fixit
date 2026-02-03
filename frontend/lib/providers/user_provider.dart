@@ -74,6 +74,10 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Failed to fetch user profile: $e');
+      if (e.toString().contains('403') || e.toString().contains('401')) {
+        debugPrint('🔒 Token expired or invalid, logging out...');
+        logout();
+      }
     }
   }
 
@@ -108,6 +112,7 @@ class UserProvider with ChangeNotifier {
     required String email,
     required String password,
     required String language,
+    String? companyName,
   }) async {
     try {
       debugPrint('🔵 Attempting registration for: $email');
@@ -116,6 +121,7 @@ class UserProvider with ChangeNotifier {
         email: email,
         password: password,
         language: language,
+        companyName: companyName,
       );
 
       // Auto-login after successful registration

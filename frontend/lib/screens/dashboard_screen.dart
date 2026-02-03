@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
 
 import '../theme/app_typography.dart';
 import 'profile_screen.dart';
+import 'inventory_screen.dart';
+import 'notifications_screen.dart';
+import 'service_orders_screen.dart';
+import 'clients_list_screen.dart';
+import 'checklist_templates_screen.dart';
+import 'create_service_order_screen.dart';
+import '../models/order.dart';
+import '../providers/user_provider.dart';
+import '../services/order_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -14,10 +24,41 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  bool _isLoadingOrders = false;
+  String? _ordersError;
+  List<Order> _orders = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() {
+      _isLoadingOrders = true;
+      _ordersError = null;
+    });
+    try {
+      final token = Provider.of<UserProvider>(context, listen: false).token;
+      if (token == null) {
+        throw Exception('Usuário não autenticado');
+      }
+      final list = await OrderService.getAll(token: token);
+      setState(() => _orders = list);
+    } catch (e) {
+      setState(() => _ordersError = e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingOrders = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final userProvider = Provider.of<UserProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark
         ? AppColors.backgroundDarkTheme
@@ -34,69 +75,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final textSecondaryColor = isDark
         ? AppColors.textSecondaryDark
         : AppColors.textTertiary;
+    final stats = _buildStats();
+    final recentOrders = _recentOrders();
 
     return Scaffold(
       backgroundColor: backgroundColor,
       body: SafeArea(
-        child: _selectedIndex == 0
-            ? SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    _buildHeader(
-                      context,
-                      isDark,
-                      textSecondaryColor,
-                      textColor,
-                      borderColor,
-                      l10n,
-                    ),
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  _buildHeader(
+                    context,
+                    isDark,
+                    textSecondaryColor,
+                    textColor,
+                    borderColor,
+                    l10n,
+                    userProvider.name ?? 'Global Tech Solutions',
+                  ),
 
-                    // Stats Section
-                    _buildStatsSection(
-                      context,
-                      isDark,
-                      surfaceColor,
-                      borderColor,
-                      textColor,
-                      textSecondaryColor,
-                      l10n,
-                    ),
+                  // Stats Section
+                  _buildStatsSection(
+                    context,
+                    isDark,
+                    surfaceColor,
+                    borderColor,
+                    textColor,
+                    textSecondaryColor,
+                    l10n,
+                    stats,
+                  ),
 
-                    // Quick Actions
-                    _buildQuickActions(
-                      context,
-                      isDark,
-                      surfaceColor,
-                      borderColor,
-                      textColor,
-                      l10n,
-                    ),
+                  // Quick Actions
+                  _buildQuickActions(
+                    context,
+                    isDark,
+                    surfaceColor,
+                    borderColor,
+                    textColor,
+                    l10n,
+                  ),
 
-                    // Recent Service Orders
-                    _buildRecentOrders(
-                      context,
-                      isDark,
-                      surfaceColor,
-                      borderColor,
-                      textColor,
-                      textSecondaryColor,
-                      l10n,
-                    ),
+                  // Recent Service Orders
+                  _buildRecentOrders(
+                    context,
+                    isDark,
+                    surfaceColor,
+                    borderColor,
+                    textColor,
+                    textSecondaryColor,
+                    l10n,
+                    recentOrders,
+                  ),
 
-                    const SizedBox(height: 100), // Space for bottom nav
-                  ],
-                ),
-              )
-            : _selectedIndex == 4
-            ? const ProfileScreen()
-            : Center(
-                child: Text(
-                  "Tab $_selectedIndex Placeholder",
-                  style: TextStyle(color: textColor),
-                ),
-              ), // Placeholder for other tabs
+                  const SizedBox(height: 100), // Space for bottom nav
+                ],
+              ),
+            ),
+            // Tab 1 (Orders)
+            const ServiceOrdersScreen(),
+            // Tab 2 (Inventory)
+            const InventoryScreen(),
+            // Tab 3 (Notifications)
+            const NotificationsScreen(),
+            // Tab 4 (Settings)
+            const ProfileScreen(),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(
         context,
@@ -115,6 +165,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color textColor,
     Color borderColor,
     AppLocalizations l10n,
+    String companyLabel,
   ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -155,7 +206,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   Text(
-                    'Global Tech Solutions',
+                    companyLabel,
                     style: AppTypography.captionSmall.copyWith(
                       color: textSecondaryColor,
                     ),
@@ -209,6 +260,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color textColor,
     Color textSecondaryColor,
     AppLocalizations l10n,
+    Map<String, int> stats,
   ) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -216,7 +268,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           _buildStatCard(
             l10n.statusOpen,
-            '12',
+            (stats['open'] ?? 0).toString(),
             '+2%',
             AppColors.success,
             isDark,
@@ -228,7 +280,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(width: 12),
           _buildStatCard(
             l10n.statusFinished, // Used for "Completed"
-            '45',
+            (stats['completed'] ?? 0).toString(),
             '+15%',
             AppColors.success,
             isDark,
@@ -240,7 +292,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(width: 12),
           _buildStatCard(
             l10n.statusOverdue,
-            '3',
+            (stats['overdue'] ?? 0).toString(),
             '-5%',
             AppColors.danger,
             isDark,
@@ -354,22 +406,77 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Expanded(
                 child: _buildQuickActionCard(
                   Icons.precision_manufacturing_outlined,
-                  l10n.createEquipment,
+                  l10n.equipmentLabel, // Changed from createEquipment
                   isDark,
                   surfaceColor,
                   borderColor,
                   textColor,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const InventoryScreen(),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildQuickActionCard(
-                  Icons.rule_outlined,
-                  l10n.createChecklist,
+                  Icons.people_outline,
+                  'Clients',
                   isDark,
                   surfaceColor,
                   borderColor,
                   textColor,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ClientsListScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionCard(
+                  Icons.rule_outlined,
+                  'Checklist Templates',
+                  isDark,
+                  surfaceColor,
+                  borderColor,
+                  textColor,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ChecklistTemplatesScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionCard(
+                  Icons.assignment_turned_in_outlined,
+                  l10n.ordersTab,
+                  isDark,
+                  surfaceColor,
+                  borderColor,
+                  textColor,
+                  onTap: () {
+                    setState(() {
+                      _selectedIndex = 1;
+                    });
+                  },
                 ),
               ),
             ],
@@ -379,7 +486,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CreateServiceOrderScreen(),
+                  ),
+                ).then((result) {
+                  if (result == true) _loadOrders();
+                });
+              },
               borderRadius: BorderRadius.circular(12),
               child: Container(
                 padding: const EdgeInsets.all(16),
@@ -423,35 +539,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
     bool isDark,
     Color surfaceColor,
     Color borderColor,
-    Color textColor,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        border: Border.all(color: borderColor),
+    Color textColor, {
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 24),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: surfaceColor,
+            border: Border.all(color: borderColor),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isDark
+                ? []
+                : [
+                    BoxShadow(
+                      color: AppColors.shadow.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: AppTypography.bodyTextSmall.copyWith(
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 24),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: AppTypography.bodyTextSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -464,6 +597,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color textColor,
     Color textSecondaryColor,
     AppLocalizations l10n,
+    List<Order> orders,
   ) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -480,7 +614,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  setState(() {
+                    _selectedIndex = 1;
+                  });
+                },
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
                   minimumSize: Size.zero,
@@ -497,69 +635,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          _buildOrderCard(
-            'SO-8821',
-            'HVAC Unit Replacement',
-            'High Priority',
-            AppColors.warningLight.withOpacity(0.3), // Mock orange-ish
-            Colors.orange[900]!, // Mock orange-ish
-            'Warehouse B-12',
-            '2h ago',
-            isDark,
-            surfaceColor,
-            borderColor,
-            textColor,
-            textSecondaryColor,
-          ),
-          const SizedBox(height: 12),
-          _buildOrderCard(
-            'SO-8819',
-            'Annual Generator Inspection',
-            'Medium',
-            AppColors.infoLight.withOpacity(0.3),
-            AppColors.infoDark,
-            'Main Facility',
-            '5h ago',
-            isDark,
-            surfaceColor,
-            borderColor,
-            textColor,
-            textSecondaryColor,
-          ),
-          const SizedBox(height: 12),
-          _buildOrderCard(
-            'SO-8815',
-            'Conveyor Belt Lubrication',
-            'Routine',
-            AppColors.slate100,
-            AppColors.slate600,
-            'Production Line 4',
-            '1d ago',
-            isDark,
-            surfaceColor,
-            borderColor,
-            textColor,
-            textSecondaryColor,
-          ),
+          if (_isLoadingOrders)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: CircularProgressIndicator(),
+            )
+          else if (_ordersError != null)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Erro ao carregar ordens recentes',
+                style: AppTypography.bodyTextSmall.copyWith(
+                  color: isDark ? AppColors.slate300 : AppColors.slate600,
+                ),
+              ),
+            )
+          else if (orders.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Sem ordens recentes',
+                style: AppTypography.bodyTextSmall.copyWith(
+                  color: isDark ? AppColors.slate300 : AppColors.slate600,
+                ),
+              ),
+            )
+          else
+            ...orders.map(
+              (order) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildOrderCardFromOrder(
+                  order,
+                  isDark,
+                  surfaceColor,
+                  borderColor,
+                  textColor,
+                  textSecondaryColor,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildOrderCard(
-    String id,
-    String title,
-    String badgeText,
-    Color badgeBg,
-    Color badgeTextCol,
-    String location,
-    String time,
+  Widget _buildOrderCardFromOrder(
+    Order order,
     bool isDark,
     Color surfaceColor,
     Color borderColor,
     Color textColor,
     Color textSecondaryColor,
   ) {
+    final badge = _priorityBadge(order.priority, isDark);
+    final time = _timeAgo(order.dataCriacao);
+    final location = _orderLocation(order);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -587,7 +717,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      id,
+                      'SO-${order.id}',
                       style: AppTypography.overline.copyWith(
                         color: textSecondaryColor,
                         letterSpacing: 1.0,
@@ -595,7 +725,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      title,
+                      order.equipamento.nome,
                       style: AppTypography.bodyTextSmall.copyWith(
                         fontWeight: FontWeight.bold,
                         color: textColor,
@@ -607,16 +737,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isDark ? badgeBg.withOpacity(0.2) : badgeBg,
+                  color: isDark ? badge.bg.withOpacity(0.2) : badge.bg,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  badgeText.toUpperCase(),
+                  badge.text.toUpperCase(),
                   style: AppTypography.overline.copyWith(
                     fontSize: 10,
-                    color: isDark
-                        ? badgeTextCol.withOpacity(0.8)
-                        : badgeTextCol,
+                    color: isDark ? badge.color.withOpacity(0.8) : badge.color,
                     letterSpacing: 0.5,
                     height: 1.0,
                   ),
@@ -633,10 +761,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: textSecondaryColor,
               ),
               const SizedBox(width: 4),
-              Text(
-                location,
-                style: AppTypography.captionSmall.copyWith(
-                  color: textSecondaryColor,
+              Expanded(
+                child: Text(
+                  location,
+                  style: AppTypography.captionSmall.copyWith(
+                    color: textSecondaryColor,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -653,6 +783,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
     );
+  }
+
+  Map<String, int> _buildStats() {
+    int open = 0;
+    int completed = 0;
+    int overdue = 0;
+    for (final order in _orders) {
+      switch (order.status) {
+        case 'FINALIZADA':
+          completed++;
+          break;
+        case 'ATRASADA':
+          overdue++;
+          break;
+        default:
+          open++;
+      }
+    }
+    return {'open': open, 'completed': completed, 'overdue': overdue};
+  }
+
+  List<Order> _recentOrders() {
+    final list = List<Order>.from(_orders);
+    list.sort((a, b) {
+      final aDate = a.dataCriacao ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bDate = b.dataCriacao ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+    return list.take(3).toList();
+  }
+
+  _BadgeData _priorityBadge(String priority, bool isDark) {
+    final raw = priority.toLowerCase();
+    if (raw.contains('alta') || raw.contains('high')) {
+      return _BadgeData(
+        text: 'High',
+        bg: AppColors.warningLight.withOpacity(0.3),
+        color: Colors.orange[900]!,
+      );
+    }
+    if (raw.contains('media') || raw.contains('medium')) {
+      return _BadgeData(
+        text: 'Medium',
+        bg: AppColors.infoLight.withOpacity(0.3),
+        color: AppColors.infoDark,
+      );
+    }
+    return _BadgeData(
+      text: 'Low',
+      bg: AppColors.slate100,
+      color: AppColors.slate600,
+    );
+  }
+
+  String _orderLocation(Order order) {
+    final equipmentLocation = order.equipamento.localizacao;
+    if (equipmentLocation != null && equipmentLocation.isNotEmpty) {
+      return equipmentLocation;
+    }
+    final client = order.cliente;
+    if (client == null) return 'Location not specified';
+    final parts = [
+      if (client.rua != null) client.rua,
+      if (client.numero != null) client.numero,
+      if (client.bairro != null) client.bairro,
+      if (client.cidade != null) client.cidade,
+    ].where((e) => e != null && e!.isNotEmpty).map((e) => e!).toList();
+    if (parts.isEmpty) return 'Location not specified';
+    return parts.join(' • ');
+  }
+
+  String _timeAgo(DateTime? time) {
+    if (time == null) return 'recent';
+    final diff = DateTime.now().difference(time);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 
   Widget _buildBottomNavigationBar(
@@ -687,21 +894,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           _buildNavItem(
             Icons.inventory_2_outlined,
-            l10n.assets,
+            l10n.inventoryTab,
             _selectedIndex == 2,
             isDark,
             2,
           ),
           _buildNavItem(
-            Icons.analytics_outlined,
-            l10n.reports,
+            Icons.notifications_none,
+            l10n.notificationsTab,
             _selectedIndex == 3,
             isDark,
             3,
           ),
           _buildNavItem(
-            Icons.settings_outlined,
-            l10n.settingsTab,
+            Icons.person_outline,
+            l10n.profileTab,
             _selectedIndex == 4,
             isDark,
             4,
@@ -746,4 +953,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+}
+
+class _BadgeData {
+  final String text;
+  final Color bg;
+  final Color color;
+
+  _BadgeData({required this.text, required this.bg, required this.color});
 }

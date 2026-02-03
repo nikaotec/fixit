@@ -37,6 +37,7 @@ class ApiService {
     required String email,
     required String password,
     required String language,
+    String? companyName,
   }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/auth/register'),
@@ -46,6 +47,8 @@ class ApiService {
         'email': email,
         'password': password,
         'language': language,
+        if (companyName != null && companyName.isNotEmpty)
+          'companyName': companyName,
       }),
     );
 
@@ -87,7 +90,7 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to fetch user profile');
+      throw Exception('Failed to fetch user profile: ${response.statusCode}');
     }
   }
 

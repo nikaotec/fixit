@@ -69,9 +69,22 @@ class ProfileScreen extends StatelessWidget {
           children: [
             // Profile Header
             Container(
-              color: isDark ? AppColors.surfaceDarkTheme : Colors.white,
               padding: const EdgeInsets.all(24),
-              margin: const EdgeInsets.only(bottom: 8),
+              margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDarkTheme : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: borderColor),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: AppColors.shadow.withOpacity(0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+              ),
               child: Column(
                 children: [
                   Container(
@@ -131,11 +144,20 @@ class ProfileScreen extends StatelessWidget {
             // Account Settings Section
             _buildSectionHeader(l10n.accountSettings, textSecondaryColor),
             Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: surfaceColor,
-                border: Border.symmetric(
-                  horizontal: BorderSide(color: borderColor),
-                ),
+                border: Border.all(color: borderColor),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: AppColors.shadow.withOpacity(0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
               ),
               child: Column(
                 children: [
@@ -163,11 +185,20 @@ class ProfileScreen extends StatelessWidget {
             // Preferences Section
             _buildSectionHeader(l10n.preferences, textSecondaryColor),
             Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: surfaceColor,
-                border: Border.symmetric(
-                  horizontal: BorderSide(color: borderColor),
-                ),
+                border: Border.all(color: borderColor),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: isDark
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: AppColors.shadow.withOpacity(0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
               ),
               child: Column(
                 children: [

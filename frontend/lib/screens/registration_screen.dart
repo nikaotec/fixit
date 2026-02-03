@@ -17,6 +17,7 @@ class RegistrationScreen extends StatefulWidget {
 class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _companyController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -29,6 +30,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _companyController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -49,6 +51,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       language: _selectedLanguage,
+      companyName: _companyController.text.trim().isEmpty
+          ? null
+          : _companyController.text.trim(),
     );
 
     if (!mounted) return;
@@ -137,132 +142,175 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
                         // Form
                         Expanded(
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Full Name
-                                _buildTextField(
-                                  controller: _nameController,
-                                  label: 'Full Name',
-                                  hint: 'Enter your full name',
-                                  isDark: isDark,
-                                  keyboardType: TextInputType.name,
-                                  textInputAction: TextInputAction.next,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your full name';
-                                    }
-                                    if (value.length < 3) {
-                                      return 'Name must be at least 3 characters';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.surfaceDarkTheme
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.borderDefaultDark
+                                    : AppColors.borderLight,
+                              ),
+                              boxShadow: isDark
+                                  ? []
+                                  : [
+                                      BoxShadow(
+                                        color:
+                                            AppColors.shadow.withOpacity(0.08),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                            ),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.stretch,
+                                children: [
+                                  // Full Name
+                                  _buildTextField(
+                                    controller: _nameController,
+                                    label: 'Full Name',
+                                    hint: 'Enter your full name',
+                                    isDark: isDark,
+                                    keyboardType: TextInputType.name,
+                                    textInputAction: TextInputAction.next,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter your full name';
+                                      }
+                                      if (value.length < 3) {
+                                        return 'Name must be at least 3 characters';
+                                      }
+                                      return null;
+                                    },
+                                  ),
 
-                                const SizedBox(height: 16),
+                                  const SizedBox(height: 16),
 
-                                // Email
-                                _buildTextField(
-                                  controller: _emailController,
-                                  label: 'Email Address',
-                                  hint: 'name@company.com',
-                                  isDark: isDark,
-                                  keyboardType: TextInputType.emailAddress,
-                                  textInputAction: TextInputAction.next,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your email';
-                                    }
-                                    if (!value.contains('@')) {
-                                      return 'Please enter a valid email';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                  // Company Name
+                                  _buildTextField(
+                                    controller: _companyController,
+                                    label: 'Company Name',
+                                    hint: 'Enter your company name',
+                                    isDark: isDark,
+                                    keyboardType: TextInputType.text,
+                                    textInputAction: TextInputAction.next,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter your company name';
+                                      }
+                                      return null;
+                                    },
+                                  ),
 
-                                const SizedBox(height: 16),
+                                  const SizedBox(height: 16),
 
-                                // Language Selector
-                                _buildLanguageSelector(isDark),
+                                  // Email
+                                  _buildTextField(
+                                    controller: _emailController,
+                                    label: 'Email Address',
+                                    hint: 'name@company.com',
+                                    isDark: isDark,
+                                    keyboardType: TextInputType.emailAddress,
+                                    textInputAction: TextInputAction.next,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter your email';
+                                      }
+                                      if (!value.contains('@')) {
+                                        return 'Please enter a valid email';
+                                      }
+                                      return null;
+                                    },
+                                  ),
 
-                                const SizedBox(height: 16),
+                                  const SizedBox(height: 16),
 
-                                // Password
-                                _buildPasswordField(
-                                  controller: _passwordController,
-                                  label: 'Password',
-                                  hint: 'Create a password',
-                                  isDark: isDark,
-                                  obscureText: _obscurePassword,
-                                  onToggleVisibility: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter a password';
-                                    }
-                                    if (value.length < 8) {
-                                      return 'Password must be at least 8 characters';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                  // Language Selector
+                                  _buildLanguageSelector(isDark),
 
-                                const SizedBox(height: 16),
+                                  const SizedBox(height: 16),
 
-                                // Confirm Password
-                                _buildPasswordField(
-                                  controller: _confirmPasswordController,
-                                  label: 'Confirm Password',
-                                  hint: 'Repeat your password',
-                                  isDark: isDark,
-                                  obscureText: _obscureConfirmPassword,
-                                  onToggleVisibility: () {
-                                    setState(() {
-                                      _obscureConfirmPassword =
-                                          !_obscureConfirmPassword;
-                                    });
-                                  },
-                                  textInputAction: TextInputAction.done,
-                                  onFieldSubmitted: (_) => _submit(),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please confirm your password';
-                                    }
-                                    if (value != _passwordController.text) {
-                                      return 'Passwords do not match';
-                                    }
-                                    return null;
-                                  },
-                                ),
+                                  // Password
+                                  _buildPasswordField(
+                                    controller: _passwordController,
+                                    label: 'Password',
+                                    hint: 'Create a password',
+                                    isDark: isDark,
+                                    obscureText: _obscurePassword,
+                                    onToggleVisibility: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter a password';
+                                      }
+                                      if (value.length < 8) {
+                                        return 'Password must be at least 8 characters';
+                                      }
+                                      return null;
+                                    },
+                                  ),
 
-                                const SizedBox(height: 40),
+                                  const SizedBox(height: 16),
 
-                                // Submit Button
-                                _buildSubmitButton(),
+                                  // Confirm Password
+                                  _buildPasswordField(
+                                    controller: _confirmPasswordController,
+                                    label: 'Confirm Password',
+                                    hint: 'Repeat your password',
+                                    isDark: isDark,
+                                    obscureText: _obscureConfirmPassword,
+                                    onToggleVisibility: () {
+                                      setState(() {
+                                        _obscureConfirmPassword =
+                                            !_obscureConfirmPassword;
+                                      });
+                                    },
+                                    textInputAction: TextInputAction.done,
+                                    onFieldSubmitted: (_) => _submit(),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please confirm your password';
+                                      }
+                                      if (value != _passwordController.text) {
+                                        return 'Passwords do not match';
+                                      }
+                                      return null;
+                                    },
+                                  ),
 
-                                const SizedBox(height: 24),
+                                  const SizedBox(height: 40),
 
-                                // Login Link
-                                _buildLoginLink(isDark),
+                                  // Submit Button
+                                  _buildSubmitButton(),
 
-                                const SizedBox(height: 32),
+                                  const SizedBox(height: 24),
 
-                                // Legal Notice
-                                _buildLegalNotice(isDark),
+                                  // Login Link
+                                  _buildLoginLink(isDark),
 
-                                const SizedBox(height: 16),
-                              ],
+                                  const SizedBox(height: 32),
+
+                                  // Legal Notice
+                                  _buildLegalNotice(isDark),
+
+                                  const SizedBox(height: 16),
+                                ],
+                              ),
                             ),
                           ),
                         ),
 
                         // Bottom Indicator
-                        _buildBottomIndicator(isDark),
+                        _buildBottomIndicator(),
                         const SizedBox(height: 8),
                       ],
                     ),
@@ -532,7 +580,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildBottomIndicator(bool isDark) {
+  Widget _buildBottomIndicator() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Container(
         width: 128,
