@@ -411,4 +411,287 @@ class AppLocalizationsEn extends AppLocalizations {
   String itemsFound(int count) {
     return '$count items found';
   }
+
+  @override
+  String get ordersTitle => 'Orders';
+
+  @override
+  String get serviceOrdersTitle => 'Service Orders';
+
+  @override
+  String get searchOrdersPlaceholder => 'Search orders';
+
+  @override
+  String get statusPending => 'Pending';
+
+  @override
+  String get statusCancelled => 'Cancelled';
+
+  @override
+  String get locationNotSpecified => 'Location not specified';
+
+  @override
+  String get noSchedule => 'No schedule';
+
+  @override
+  String get orderDetailsTitle => 'Order Details';
+
+  @override
+  String get startMaintenance => 'Start Maintenance';
+
+  @override
+  String get clientAndLocation => 'Client & Location';
+
+  @override
+  String get assignedChecklist => 'Assigned Checklist';
+
+  @override
+  String get checklistNotAssigned => 'Checklist not assigned';
+
+  @override
+  String get assignedTechnician => 'Assigned Technician';
+
+  @override
+  String get unassigned => 'Unassigned';
+
+  @override
+  String get reassign => 'Reassign';
+
+  @override
+  String createdBy(Object name) {
+    return 'Created by $name';
+  }
+
+  @override
+  String get roleCreator => 'Creator';
+
+  @override
+  String get roleResponsible => 'Responsible';
+
+  @override
+  String get roleCreatorResponsible => 'Creator and responsible';
+
+  @override
+  String get checklistTemplates => 'Checklist Templates';
+
+  @override
+  String get techniciansLabel => 'Technicians';
+
+  @override
+  String get forgotPassword => 'Forgot Password?';
+
+  @override
+  String get passwordMin6 => 'Password must be at least 6 characters';
+
+  @override
+  String get noAccountQuestion => 'Don\'t have an account?';
+
+  @override
+  String get createAccount => 'Create Account';
+
+  @override
+  String get englishLabel => 'English';
+
+  @override
+  String get portugueseLabel => 'Portuguese';
+
+  @override
+  String get forgotPasswordTitle => 'Forgot Password';
+
+  @override
+  String get forgotPasswordBody =>
+      'Password reset is managed by your administrator for now. Contact your manager to reset your credentials.';
+
+  @override
+  String get registerTitle => 'Create Your Account';
+
+  @override
+  String get emailRequired => 'Please enter your email';
+
+  @override
+  String get emailInvalid => 'Please enter a valid email';
+
+  @override
+  String get passwordLabelText => 'Password';
+
+  @override
+  String get passwordHint => 'Create a password';
+
+  @override
+  String get passwordRequired => 'Please enter a password';
+
+  @override
+  String get passwordMin8 => 'Password must be at least 8 characters';
+
+  @override
+  String get confirmPasswordLabel => 'Confirm Password';
+
+  @override
+  String get confirmPasswordHint => 'Repeat your password';
+
+  @override
+  String get confirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get initialLanguage => 'Initial Language';
+
+  @override
+  String get alreadyHaveAccount => 'Already have an account?';
+
+  @override
+  String get logIn => 'Log in';
+
+  @override
+  String get termsPrefix => 'By creating an account, you agree to our ';
+
+  @override
+  String get termsOfService => 'Terms of Service';
+
+  @override
+  String get andConjunction => ' and ';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get orderDetailsHeading => 'Order Details';
+
+  @override
+  String get orderTypeLabel => 'Order type';
+
+  @override
+  String get orderTypeMaintenance => 'Maintenance';
+
+  @override
+  String get orderTypeRepair => 'Repair';
+
+  @override
+  String get orderTypeOther => 'Other';
+
+  @override
+  String get problemDescriptionLabel => 'Problem description';
+
+  @override
+  String get problemDescriptionHint => 'Describe the problem to be fixed';
+
+  @override
+  String get problemDescriptionRequired => 'Please describe the problem';
+
+  @override
+  String get problemDescriptionEmpty => 'No problem description provided';
+
+  @override
+  String get brandLabel => 'Brand';
+
+  @override
+  String get modelLabel => 'Model';
+
+  @override
+  String get brandRequired => 'Please enter the brand';
+
+  @override
+  String get modelRequired => 'Please enter the model';
+
+  @override
+  String get voiceInput => 'Voice input';
+
+  @override
+  String get listening => 'Listening...';
+
+  @override
+  String get transcribing => 'Transcribing';
+
+  @override
+  String get portugueseBrazil => 'Portuguese (BR)';
+
+  @override
+  String get englishUS => 'English (US)';
+
+  @override
+  String get voiceNotAvailable => 'Voice input not available';
+
+  @override
+  String get stopListening => 'Stop';
+
+  @override
+  String get selectEquipmentChecklist => 'Select equipment and checklist';
+
+  @override
+  String get orderCreatedSuccess => 'Order created successfully';
+
+  @override
+  String get userNotAuthenticated => 'User not authenticated';
+
+  @override
+  String errorLoadingData(Object error) {
+    return 'Error loading data: $error';
+  }
+
+  @override
+  String errorCreatingOrder(Object error) {
+    return 'Error creating order: $error';
+  }
+
+  @override
+  String get serverRejectedTechnician =>
+      'The server did not accept the selected technician';
+
+  @override
+  String get scheduledDate => 'Scheduled date';
+
+  @override
+  String get selectDate => 'Select date';
+
+  @override
+  String get saving => 'Saving...';
+
+  @override
+  String get createOrder => 'Create Order';
+
+  @override
+  String get responsibleTechnician => 'Responsible technician';
+
+  @override
+  String get priorityLabel => 'Priority';
+
+  @override
+  String get priorityHigh => 'High';
+
+  @override
+  String get priorityMedium => 'Medium';
+
+  @override
+  String get priorityLow => 'Low';
+
+  @override
+  String get doNotAssignNow => 'Do not assign now';
+
+  @override
+  String get meLabel => 'Me';
+
+  @override
+  String meWithName(Object name) {
+    return 'Me ($name)';
+  }
+
+  @override
+  String get meUnavailable => 'Me (unavailable)';
+
+  @override
+  String get recentOrdersError => 'Error loading recent orders';
+
+  @override
+  String get noRecentOrders => 'No recent orders';
+
+  @override
+  String get createServiceOrderTitle => 'Create Service Order';
+
+  @override
+  String get ordersLoadError => 'Error loading orders';
+
+  @override
+  String get noOrdersFound => 'No orders found';
 }

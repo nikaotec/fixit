@@ -6,6 +6,7 @@ import '../models/order.dart';
 import '../providers/user_provider.dart';
 import '../services/checklist_service.dart';
 import 'create_checklist_template_screen.dart';
+import 'checklist_template_details_screen.dart';
 
 class ChecklistTemplatesScreen extends StatefulWidget {
   const ChecklistTemplatesScreen({super.key});
@@ -19,11 +20,22 @@ class _ChecklistTemplatesScreenState extends State<ChecklistTemplatesScreen> {
   bool _isLoading = false;
   String? _error;
   List<Checklist> _templates = [];
+  String? _lastToken;
 
   @override
   void initState() {
     super.initState();
     _loadTemplates();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final token = Provider.of<UserProvider>(context, listen: false).token;
+    if (token != null && token != _lastToken) {
+      _lastToken = token;
+      _loadTemplates();
+    }
   }
 
   Future<void> _loadTemplates() async {
@@ -33,9 +45,7 @@ class _ChecklistTemplatesScreenState extends State<ChecklistTemplatesScreen> {
     });
     try {
       final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) {
-        throw Exception('Usuário não autenticado');
-      }
+      if (token == null) return;
       final list = await ChecklistService.getAll(token: token);
       setState(() => _templates = list);
     } catch (e) {
@@ -120,60 +130,74 @@ class _ChecklistTemplatesScreenState extends State<ChecklistTemplatesScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = _templates[index];
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: border),
-            boxShadow: isDark
-                ? []
-                : [
-                    BoxShadow(
-                      color: AppColors.shadow.withOpacity(0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.14),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.fact_check, color: AppColors.primary),
+        return InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ChecklistTemplateDetailsScreen(checklist: item),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.nome,
-                      style: AppTypography.bodyText.copyWith(
-                        color: isDark ? Colors.white : AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
+            ).then((result) {
+              if (result == true) _loadTemplates();
+            });
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: border),
+              boxShadow: isDark
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: AppColors.shadow.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${item.itens.length} items · v${item.versao ?? 1}',
-                      style: AppTypography.caption.copyWith(
-                        color: isDark ? AppColors.slate300 : AppColors.slate600,
-                      ),
-                    ),
-                  ],
+                    ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.fact_check, color: AppColors.primary),
                 ),
-              ),
-              OutlinedButton(
-                onPressed: () {},
-                child: const Text('Use'),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.nome,
+                        style: AppTypography.bodyText.copyWith(
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${item.itens.length} items · v${item.versao ?? 1}',
+                        style: AppTypography.caption.copyWith(
+                          color:
+                              isDark ? AppColors.slate300 : AppColors.slate600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                OutlinedButton(
+                  onPressed: () {},
+                  child: const Text('Use'),
+                ),
+              ],
+            ),
           ),
         );
       },

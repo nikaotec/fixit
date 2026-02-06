@@ -16,7 +16,21 @@ public class Equipamento {
     private String localizacao;
     private String qrCode;
 
+    private String fabricante;
+    private String modelo;
+    private String numeroSerie;
+    private String classeRisco;
+    private Integer geofenceRadiusM = 100;
+
+    private Double latitude;
+    private Double longitude;
+
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    private Company company;
+
     @ManyToOne
     @JoinColumn(name = "cliente_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "equipamentos", "ordensServico" })
     private Cliente cliente;
 }

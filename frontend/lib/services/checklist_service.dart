@@ -44,4 +44,30 @@ class ChecklistService {
     }
     throw Exception('Falha ao criar checklist: ${response.statusCode}');
   }
+
+  static Future<Checklist> update({
+    required String token,
+    required int id,
+    required String nome,
+    String? descricao,
+    required List<Map<String, dynamic>> itens,
+  }) async {
+    final response = await http.put(
+      Uri.parse('${ApiService.baseUrl}/checklists/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'nome': nome,
+        'descricao': descricao,
+        'itens': itens,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return Checklist.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Falha ao atualizar checklist: ${response.statusCode}');
+  }
 }

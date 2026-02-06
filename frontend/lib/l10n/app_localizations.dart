@@ -871,6 +871,552 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} items found'**
   String itemsFound(int count);
+
+  /// No description provided for @ordersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Orders'**
+  String get ordersTitle;
+
+  /// No description provided for @serviceOrdersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Orders'**
+  String get serviceOrdersTitle;
+
+  /// No description provided for @searchOrdersPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search orders'**
+  String get searchOrdersPlaceholder;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get statusPending;
+
+  /// No description provided for @statusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get statusCancelled;
+
+  /// No description provided for @locationNotSpecified.
+  ///
+  /// In en, this message translates to:
+  /// **'Location not specified'**
+  String get locationNotSpecified;
+
+  /// No description provided for @noSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'No schedule'**
+  String get noSchedule;
+
+  /// No description provided for @orderDetailsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Details'**
+  String get orderDetailsTitle;
+
+  /// No description provided for @startMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Maintenance'**
+  String get startMaintenance;
+
+  /// No description provided for @clientAndLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Client & Location'**
+  String get clientAndLocation;
+
+  /// No description provided for @assignedChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned Checklist'**
+  String get assignedChecklist;
+
+  /// No description provided for @checklistNotAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist not assigned'**
+  String get checklistNotAssigned;
+
+  /// No description provided for @assignedTechnician.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned Technician'**
+  String get assignedTechnician;
+
+  /// No description provided for @unassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get unassigned;
+
+  /// No description provided for @reassign.
+  ///
+  /// In en, this message translates to:
+  /// **'Reassign'**
+  String get reassign;
+
+  /// No description provided for @createdBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Created by {name}'**
+  String createdBy(Object name);
+
+  /// No description provided for @roleCreator.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator'**
+  String get roleCreator;
+
+  /// No description provided for @roleResponsible.
+  ///
+  /// In en, this message translates to:
+  /// **'Responsible'**
+  String get roleResponsible;
+
+  /// No description provided for @roleCreatorResponsible.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator and responsible'**
+  String get roleCreatorResponsible;
+
+  /// No description provided for @checklistTemplates.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist Templates'**
+  String get checklistTemplates;
+
+  /// No description provided for @techniciansLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Technicians'**
+  String get techniciansLabel;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot Password?'**
+  String get forgotPassword;
+
+  /// No description provided for @passwordMin6.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordMin6;
+
+  /// No description provided for @noAccountQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account?'**
+  String get noAccountQuestion;
+
+  /// No description provided for @createAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Account'**
+  String get createAccount;
+
+  /// No description provided for @englishLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get englishLabel;
+
+  /// No description provided for @portugueseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Portuguese'**
+  String get portugueseLabel;
+
+  /// No description provided for @forgotPasswordTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot Password'**
+  String get forgotPasswordTitle;
+
+  /// No description provided for @forgotPasswordBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Password reset is managed by your administrator for now. Contact your manager to reset your credentials.'**
+  String get forgotPasswordBody;
+
+  /// No description provided for @registerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Your Account'**
+  String get registerTitle;
+
+  /// No description provided for @emailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your email'**
+  String get emailRequired;
+
+  /// No description provided for @emailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email'**
+  String get emailInvalid;
+
+  /// No description provided for @passwordLabelText.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabelText;
+
+  /// No description provided for @passwordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a password'**
+  String get passwordHint;
+
+  /// No description provided for @passwordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a password'**
+  String get passwordRequired;
+
+  /// No description provided for @passwordMin8.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters'**
+  String get passwordMin8;
+
+  /// No description provided for @confirmPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm Password'**
+  String get confirmPasswordLabel;
+
+  /// No description provided for @confirmPasswordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat your password'**
+  String get confirmPasswordHint;
+
+  /// No description provided for @confirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get confirmPasswordRequired;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @initialLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial Language'**
+  String get initialLanguage;
+
+  /// No description provided for @alreadyHaveAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account?'**
+  String get alreadyHaveAccount;
+
+  /// No description provided for @logIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Log in'**
+  String get logIn;
+
+  /// No description provided for @termsPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'By creating an account, you agree to our '**
+  String get termsPrefix;
+
+  /// No description provided for @termsOfService.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Service'**
+  String get termsOfService;
+
+  /// No description provided for @andConjunction.
+  ///
+  /// In en, this message translates to:
+  /// **' and '**
+  String get andConjunction;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @orderDetailsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Details'**
+  String get orderDetailsHeading;
+
+  /// No description provided for @orderTypeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order type'**
+  String get orderTypeLabel;
+
+  /// No description provided for @orderTypeMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get orderTypeMaintenance;
+
+  /// No description provided for @orderTypeRepair.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair'**
+  String get orderTypeRepair;
+
+  /// No description provided for @orderTypeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get orderTypeOther;
+
+  /// No description provided for @problemDescriptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem description'**
+  String get problemDescriptionLabel;
+
+  /// No description provided for @problemDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the problem to be fixed'**
+  String get problemDescriptionHint;
+
+  /// No description provided for @problemDescriptionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe the problem'**
+  String get problemDescriptionRequired;
+
+  /// No description provided for @problemDescriptionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No problem description provided'**
+  String get problemDescriptionEmpty;
+
+  /// No description provided for @brandLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get brandLabel;
+
+  /// No description provided for @modelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get modelLabel;
+
+  /// No description provided for @brandRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the brand'**
+  String get brandRequired;
+
+  /// No description provided for @modelRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the model'**
+  String get modelRequired;
+
+  /// No description provided for @voiceInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input'**
+  String get voiceInput;
+
+  /// No description provided for @listening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening...'**
+  String get listening;
+
+  /// No description provided for @transcribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing'**
+  String get transcribing;
+
+  /// No description provided for @portugueseBrazil.
+  ///
+  /// In en, this message translates to:
+  /// **'Portuguese (BR)'**
+  String get portugueseBrazil;
+
+  /// No description provided for @englishUS.
+  ///
+  /// In en, this message translates to:
+  /// **'English (US)'**
+  String get englishUS;
+
+  /// No description provided for @voiceNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice input not available'**
+  String get voiceNotAvailable;
+
+  /// No description provided for @stopListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get stopListening;
+
+  /// No description provided for @selectEquipmentChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Select equipment and checklist'**
+  String get selectEquipmentChecklist;
+
+  /// No description provided for @orderCreatedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Order created successfully'**
+  String get orderCreatedSuccess;
+
+  /// No description provided for @userNotAuthenticated.
+  ///
+  /// In en, this message translates to:
+  /// **'User not authenticated'**
+  String get userNotAuthenticated;
+
+  /// No description provided for @errorLoadingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading data: {error}'**
+  String errorLoadingData(Object error);
+
+  /// No description provided for @errorCreatingOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Error creating order: {error}'**
+  String errorCreatingOrder(Object error);
+
+  /// No description provided for @serverRejectedTechnician.
+  ///
+  /// In en, this message translates to:
+  /// **'The server did not accept the selected technician'**
+  String get serverRejectedTechnician;
+
+  /// No description provided for @scheduledDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled date'**
+  String get scheduledDate;
+
+  /// No description provided for @selectDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Select date'**
+  String get selectDate;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get saving;
+
+  /// No description provided for @createOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Order'**
+  String get createOrder;
+
+  /// No description provided for @responsibleTechnician.
+  ///
+  /// In en, this message translates to:
+  /// **'Responsible technician'**
+  String get responsibleTechnician;
+
+  /// No description provided for @priorityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get priorityLabel;
+
+  /// No description provided for @priorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get priorityHigh;
+
+  /// No description provided for @priorityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get priorityMedium;
+
+  /// No description provided for @priorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get priorityLow;
+
+  /// No description provided for @doNotAssignNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not assign now'**
+  String get doNotAssignNow;
+
+  /// No description provided for @meLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get meLabel;
+
+  /// No description provided for @meWithName.
+  ///
+  /// In en, this message translates to:
+  /// **'Me ({name})'**
+  String meWithName(Object name);
+
+  /// No description provided for @meUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Me (unavailable)'**
+  String get meUnavailable;
+
+  /// No description provided for @recentOrdersError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading recent orders'**
+  String get recentOrdersError;
+
+  /// No description provided for @noRecentOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent orders'**
+  String get noRecentOrders;
+
+  /// No description provided for @createServiceOrderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Service Order'**
+  String get createServiceOrderTitle;
+
+  /// No description provided for @ordersLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading orders'**
+  String get ordersLoadError;
+
+  /// No description provided for @noOrdersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No orders found'**
+  String get noOrdersFound;
 }
 
 class _AppLocalizationsDelegate

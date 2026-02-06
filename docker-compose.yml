@@ -38,6 +38,7 @@ services:
       - SPRING_JPA_SHOW_SQL=false
       - JWT_SECRET=your-secret-key-change-this-in-production-min-256-bits
       - JWT_EXPIRATION=86400000
+      - APP_STORAGE_BASE_PATH=/tmp/storage
     networks:
       - fixit-network
     depends_on:

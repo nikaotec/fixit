@@ -19,6 +19,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
   bool _isLoading = false;
   String? _error;
   List<Map<String, dynamic>> _clients = [];
+  String? _lastToken;
 
   @override
   void dispose() {
@@ -32,6 +33,16 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
     _loadClients();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final token = Provider.of<UserProvider>(context, listen: false).token;
+    if (token != null && token != _lastToken) {
+      _lastToken = token;
+      _loadClients();
+    }
+  }
+
   Future<void> _loadClients() async {
     setState(() {
       _isLoading = true;
@@ -39,9 +50,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
     });
     try {
       final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) {
-        throw Exception('Usuário não autenticado');
-      }
+      if (token == null) return;
       final list = await ClienteService.listarClientes(token: token);
       setState(() {
         _clients = list;

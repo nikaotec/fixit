@@ -49,7 +49,7 @@ public class JwtTokenProvider {
             Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(authToken);
             return true;
         } catch (JwtException | IllegalArgumentException ex) {
-            // Log error
+            System.err.println("Invalid JWT token: " + ex.getMessage());
         }
         return false;
     }

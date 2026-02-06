@@ -22,10 +22,15 @@ class OrderService {
 
   static Future<Order> create({
     required String token,
-    required int equipamentoId,
-    required int checklistId,
+    int? equipamentoId,
+    int? checklistId,
     String? clienteId,
+    String? responsavelId,
     required String prioridade,
+    required String orderType,
+    String? problemDescription,
+    String? equipmentBrand,
+    String? equipmentModel,
     DateTime? dataPrevista,
   }) async {
     final response = await http.post(
@@ -35,10 +40,18 @@ class OrderService {
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
-        'equipamento': {'id': equipamentoId},
-        'checklist': {'id': checklistId},
+        if (equipamentoId != null) 'equipamento': {'id': equipamentoId},
+        if (checklistId != null) 'checklist': {'id': checklistId},
         if (clienteId != null) 'cliente': {'id': clienteId},
+        if (responsavelId != null) 'responsavel': {'id': responsavelId},
         'prioridade': prioridade,
+        'tipo': orderType,
+        if (problemDescription != null && problemDescription.trim().isNotEmpty)
+          'problemDescription': problemDescription.trim(),
+        if (equipmentBrand != null && equipmentBrand.trim().isNotEmpty)
+          'equipmentBrand': equipmentBrand.trim(),
+        if (equipmentModel != null && equipmentModel.trim().isNotEmpty)
+          'equipmentModel': equipmentModel.trim(),
         if (dataPrevista != null) 'dataPrevista': dataPrevista.toIso8601String(),
       }),
     );

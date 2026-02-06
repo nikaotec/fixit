@@ -1,11 +1,38 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/order.dart';
 
 class ApiService {
   static String get baseUrl {
+    const String baseUrlOverride = String.fromEnvironment('API_BASE_URL');
+    const String hostOverride = String.fromEnvironment('API_HOST');
+    const String portOverride = String.fromEnvironment(
+      'API_PORT',
+      defaultValue: '8080',
+    );
+    final String dotenvBaseUrl = dotenv.env['API_BASE_URL'] ?? '';
+    final String dotenvHost = dotenv.env['API_HOST'] ?? '';
+    final String dotenvPort = dotenv.env['API_PORT'] ?? '8080';
+
+    if (baseUrlOverride.isNotEmpty) {
+      return baseUrlOverride;
+    }
+
+    if (hostOverride.isNotEmpty) {
+      return 'http://$hostOverride:$portOverride';
+    }
+
+    if (dotenvBaseUrl.isNotEmpty) {
+      return dotenvBaseUrl;
+    }
+
+    if (dotenvHost.isNotEmpty) {
+      return 'http://$dotenvHost:$dotenvPort';
+    }
+
     if (kIsWeb) {
       return 'http://localhost:8080';
     } else if (Platform.isAndroid) {
@@ -13,6 +40,10 @@ class ApiService {
     } else {
       return 'http://localhost:8080';
     }
+  }
+
+  static String get wsBaseUrl {
+    return baseUrl.replaceFirst('http', 'ws');
   }
 
   static Future<Map<String, dynamic>> login(

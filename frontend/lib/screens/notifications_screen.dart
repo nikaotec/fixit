@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../providers/user_provider.dart';
 import '../services/notification_service.dart';
+import '../services/api_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -16,11 +21,49 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   bool _isLoading = false;
   String? _error;
   List<_NotificationItem> _items = [];
+  String? _lastToken;
+  WebSocketChannel? _ordersChannel;
+  StreamSubscription? _ordersSub;
 
   @override
   void initState() {
     super.initState();
     _loadNotifications();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final token = Provider.of<UserProvider>(context, listen: false).token;
+    if (token != null && token != _lastToken) {
+      _lastToken = token;
+      _connectRealtime(token);
+      _loadNotifications();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ordersSub?.cancel();
+    _ordersChannel?.sink.close();
+    super.dispose();
+  }
+
+  void _connectRealtime(String token) {
+    _ordersSub?.cancel();
+    _ordersChannel?.sink.close();
+    final url = '${ApiService.wsBaseUrl}/ws/orders?token=$token';
+    _ordersChannel = IOWebSocketChannel.connect(Uri.parse(url));
+    _ordersSub = _ordersChannel!.stream.listen((event) {
+      try {
+        final data = jsonDecode(event);
+        if (data is Map && data['type'] == 'order_updated') {
+          _loadNotifications();
+        }
+      } catch (_) {
+        _loadNotifications();
+      }
+    });
   }
 
   Future<void> _loadNotifications() async {
@@ -30,9 +73,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
     try {
       final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) {
-        throw Exception('Usuário não autenticado');
-      }
+      if (token == null) return;
       final list = await NotificationService.getAll(token: token);
       setState(() => _items = _buildFromApi(list));
     } catch (e) {

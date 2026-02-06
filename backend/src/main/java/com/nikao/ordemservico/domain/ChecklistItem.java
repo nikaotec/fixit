@@ -13,8 +13,10 @@ public class ChecklistItem {
     private String descricao;
     private int ordem;
     private boolean obrigatorioFoto;
+    private boolean critico;
 
     @ManyToOne
     @JoinColumn(name = "checklist_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Checklist checklist;
 }

@@ -57,7 +57,9 @@ class EquipmentService {
       final List<dynamic> data = jsonDecode(response.body);
       return data.cast<Map<String, dynamic>>();
     } else {
-      throw Exception('Falha ao listar equipamentos');
+      throw Exception(
+        'Falha ao listar equipamentos (${response.statusCode}): ${response.body}',
+      );
     }
   }
 

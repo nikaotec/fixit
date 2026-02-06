@@ -25,6 +25,10 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    private Company company;
+
     private String fcmToken;
     private boolean active = true;
 
@@ -32,7 +36,13 @@ public class User {
     private Role role; // ADMIN, GESTOR, TECNICO, CLIENTE
 
     private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     // Locale preference (pt, en, etc)
     private String locale = "pt";
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

@@ -1,31 +1,43 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'dashboard_screen.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:signature/signature.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/execution_models.dart';
+import '../models/local_photo.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/user_provider.dart';
+import '../services/api_service.dart';
 import '../services/device_service.dart';
 import '../services/execution_service.dart';
+import '../services/speech_service.dart';
+import '../services/voice_preferences.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import 'execution_review_screen.dart';
+import 'execution_report_preview_screen.dart';
 
 class ExecutionFlowScreen extends StatefulWidget {
   final int? orderId;
   final String? qrPayload;
   final String? equipmentTitle;
+  final String? orderType;
 
   const ExecutionFlowScreen({
     super.key,
     this.orderId,
     this.qrPayload,
     this.equipmentTitle,
+    this.orderType,
   });
 
   @override
@@ -34,36 +46,189 @@ class ExecutionFlowScreen extends StatefulWidget {
 
 class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
   final _orderIdController = TextEditingController();
-  final _signatureController = SignatureController(
-    penStrokeWidth: 4,
-    penColor: Colors.black,
-    exportBackgroundColor: Colors.white,
-  );
+  final _serviceDescriptionController = TextEditingController();
+  final SpeechService _speechService = SpeechService();
+  bool _listeningService = false;
+  String _serviceBaseText = '';
+  String _serviceLocale = 'pt_BR';
+  String _servicePartial = '';
 
   bool _isStarting = false;
-  bool _isFinalizing = false;
   String? _qrPayload;
   ExecutionStartResponse? _execution;
   bool _autoStarted = false;
+  bool _isFinalized = false;
+  String? _lastToken;
+  WebSocketChannel? _ordersChannel;
+  StreamSubscription? _ordersSub;
 
   final Map<int, bool> _itemStatus = {};
-  final Map<int, int> _executionItemIds = {};
   final Map<int, TextEditingController> _observations = {};
-  final Map<int, bool> _uploadingEvidence = {};
+  final Map<int, List<LocalPhoto>> _pendingEvidence = {};
+  bool _loadedLocale = false;
 
   @override
   void dispose() {
     _orderIdController.dispose();
-    _signatureController.dispose();
+    _serviceDescriptionController.dispose();
     for (final controller in _observations.values) {
       controller.dispose();
     }
+    _ordersSub?.cancel();
+    _ordersChannel?.sink.close();
     super.dispose();
+  }
+
+  Future<void> _toggleServiceDictation() async {
+    final l10n = AppLocalizations.of(context);
+    final available = await _speechService.ensureInitialized();
+    if (!available) {
+      _showSnack(l10n?.voiceNotAvailable ?? 'Entrada de voz indisponível');
+      return;
+    }
+    if (_speechService.isListening) {
+      await _speechService.stop();
+      if (mounted) setState(() => _listeningService = false);
+      return;
+    }
+    _serviceBaseText = _serviceDescriptionController.text.trim();
+    if (mounted) setState(() => _listeningService = true);
+    await _speechService.start(
+      localeId: _serviceLocale,
+      onResult: (words, isFinal) {
+        final prefix = _serviceBaseText.isEmpty ? '' : '$_serviceBaseText ';
+        _serviceDescriptionController.text = '$prefix$words';
+        _serviceDescriptionController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _serviceDescriptionController.text.length),
+        );
+        if (mounted) {
+          setState(() => _servicePartial = words);
+        }
+        if (isFinal && mounted) {
+          setState(() {
+            _listeningService = false;
+            _servicePartial = '';
+          });
+        }
+    },
+    );
+  }
+
+  Widget _buildListeningBadge(bool isDark, String label) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.4, end: 1),
+      duration: const Duration(milliseconds: 900),
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: _listeningService ? value : 0,
+          child: child,
+        );
+      },
+      onEnd: () {
+        if (mounted && _listeningService) {
+          setState(() {});
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.slate800 : AppColors.slate100,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.captionSmall.copyWith(
+            color: isDark ? AppColors.slate200 : AppColors.slate700,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocaleSelector(AppLocalizations? l10n) {
+    final label = _serviceLocale == 'en_US'
+        ? (l10n?.englishUS ?? 'English (US)')
+        : (l10n?.portugueseBrazil ?? 'Português (BR)');
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        if (mounted) {
+          setState(() => _serviceLocale = value);
+        }
+        VoicePreferences.setLocale(value);
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'pt_BR',
+          child: Text(l10n?.portugueseBrazil ?? 'Português (BR)'),
+        ),
+        PopupMenuItem(
+          value: 'en_US',
+          child: Text(l10n?.englishUS ?? 'English (US)'),
+        ),
+      ],
+      child: OutlinedButton.icon(
+        onPressed: null,
+        icon: const Icon(Icons.language),
+        label: Text(label),
+      ),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final token = Provider.of<UserProvider>(context).token;
+    if (token != null && token != _lastToken) {
+      _lastToken = token;
+      _connectRealtime(token);
+    }
+    if (!_loadedLocale) {
+      _loadedLocale = true;
+      _loadVoiceLocale();
+    }
+  }
+
+  Future<void> _loadVoiceLocale() async {
+    final saved = await VoicePreferences.getLocale();
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context);
+    final fallback = (l10n?.localeName ?? 'pt_BR').startsWith('en')
+        ? 'en_US'
+        : 'pt_BR';
+    setState(() => _serviceLocale = saved ?? fallback);
+  }
+
+  void _connectRealtime(String token) {
+    _ordersSub?.cancel();
+    _ordersChannel?.sink.close();
+    final url = '${ApiService.wsBaseUrl}/ws/orders?token=$token';
+    _ordersChannel = IOWebSocketChannel.connect(Uri.parse(url));
+    _ordersSub = _ordersChannel!.stream.listen((event) {
+      try {
+        final data = jsonDecode(event);
+        if (data is Map &&
+            data['type'] == 'order_updated' &&
+            _execution != null &&
+            data['orderId']?.toString() ==
+                _execution!.maintenanceOrderId.toString()) {
+          final status = data['status']?.toString();
+          if (status == 'FINALIZADA') {
+            if (mounted) {
+              setState(() => _isFinalized = true);
+            }
+          }
+        }
+      } catch (_) {}
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_autoStarted && widget.orderId != null && widget.qrPayload != null) {
+    final isMaintenance = _isMaintenanceOrder();
+    if (!_autoStarted &&
+        widget.orderId != null &&
+        (widget.qrPayload != null || !isMaintenance)) {
       _orderIdController.text = widget.orderId.toString();
       _qrPayload = widget.qrPayload;
       _autoStarted = true;
@@ -71,10 +236,11 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final title = _executionTitle();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Maintenance Execution'),
+        title: Text(title),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -86,13 +252,13 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
             if (_execution != null) ...[
               _buildExecutionHeader(isDark),
               const SizedBox(height: 16),
-              _buildChecklist(isDark),
-              const SizedBox(height: 20),
-              _buildSignatureSection(isDark),
-              const SizedBox(height: 12),
-              _buildFinalizeButton(),
-              const SizedBox(height: 16),
-              _buildReportButton(),
+              if (_isFinalized)
+                _buildFinalizedActions(isDark)
+              else ...[
+                _buildChecklist(isDark),
+                const SizedBox(height: 20),
+                _buildReviewButton(),
+              ],
             ],
           ],
         ),
@@ -101,6 +267,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
   }
 
   Widget _buildStartCard(bool isDark) {
+    final isMaintenance = _isMaintenanceOrder();
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -136,7 +303,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Start Maintenance',
+                  _startCardTitle(),
                   style: AppTypography.headline3.copyWith(
                     color: isDark ? Colors.white : AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -146,6 +313,15 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
             ],
           ),
           const SizedBox(height: 12),
+          if (isMaintenance) ...[
+            Text(
+              'Leia o QR code para validar o equipamento',
+              style: AppTypography.bodyTextSmall.copyWith(
+                color: isDark ? AppColors.slate300 : AppColors.slate600,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           TextField(
             controller: _orderIdController,
             keyboardType: TextInputType.number,
@@ -155,27 +331,29 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _showScanner,
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Scan QR'),
+          if (isMaintenance) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _showScanner,
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('Scan QR'),
+                  ),
+                ),
+              ],
+            ),
+            if (_qrPayload != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'QR captured',
+                style: AppTypography.captionSmall.copyWith(
+                  color: isDark ? AppColors.slate300 : AppColors.slate600,
                 ),
               ),
             ],
-          ),
-          if (_qrPayload != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'QR captured',
-              style: AppTypography.captionSmall.copyWith(
-                color: isDark ? AppColors.slate300 : AppColors.slate600,
-              ),
-            ),
+            const SizedBox(height: 12),
           ],
-          const SizedBox(height: 12),
           ElevatedButton.icon(
             onPressed: _isStarting ? null : _startExecution,
             icon: _isStarting
@@ -268,6 +446,8 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
 
   Widget _buildChecklist(bool isDark) {
     final items = _execution!.checklistItems;
+    final isMaintenance = _execution!.orderType == 'MANUTENCAO';
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -291,14 +471,81 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Maintenance Checklist',
+            isMaintenance ? 'Maintenance Checklist' : 'Descrição do serviço',
             style: AppTypography.headline3.copyWith(
               color: isDark ? Colors.white : AppColors.textPrimary,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 12),
-          for (final item in items) _buildChecklistItem(item, isDark),
+          if (isMaintenance) ...[
+            for (final item in items) _buildChecklistItem(item, isDark),
+          ] else ...[
+            if (_execution!.problemDescription != null &&
+                _execution!.problemDescription!.isNotEmpty) ...[
+              Text(
+                'Problema informado: ${_execution!.problemDescription}',
+                style: AppTypography.caption.copyWith(
+                  color: isDark ? AppColors.slate300 : AppColors.slate600,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            TextField(
+              controller: _serviceDescriptionController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Descreva o que foi feito',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _toggleServiceDictation,
+                  icon: Icon(
+                    _listeningService ? Icons.mic : Icons.mic_none,
+                  ),
+                  label: Text(
+                    _listeningService
+                        ? (l10n?.listening ?? 'Ouvindo...')
+                        : (l10n?.voiceInput ?? 'Entrada por voz'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: _speechService.isListening
+                      ? () async {
+                          await _speechService.stop();
+                          if (mounted) {
+                            setState(() {
+                              _listeningService = false;
+                              _servicePartial = '';
+                            });
+                          }
+                        }
+                      : null,
+                  icon: const Icon(Icons.stop_circle_outlined),
+                  label: Text(l10n?.stopListening ?? 'Parar'),
+                ),
+                const SizedBox(width: 8),
+                _buildLocaleSelector(l10n),
+                const Spacer(),
+                if (_listeningService)
+                  _buildListeningBadge(isDark, l10n?.listening ?? 'Ouvindo...'),
+              ],
+            ),
+            if (_servicePartial.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${l10n?.transcribing ?? 'Transcrevendo'}: $_servicePartial',
+                style: AppTypography.caption.copyWith(
+                  color: isDark ? AppColors.slate300 : AppColors.slate600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
         ],
       ),
     );
@@ -309,7 +556,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
       item.id,
       () => TextEditingController(),
     );
-    final uploading = _uploadingEvidence[item.id] ?? false;
+    final uploading = false;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -332,77 +579,33 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => setState(() => _itemStatus[item.id] = true),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: (_itemStatus[item.id] ?? false)
-                          ? AppColors.success
-                          : (isDark ? AppColors.slate600 : AppColors.slate300),
-                    ),
-                    backgroundColor: (_itemStatus[item.id] ?? false)
-                        ? AppColors.statusCompletedBg
-                        : Colors.transparent,
-                  ),
-                  child: Text(
-                    'Pass',
-                    style: TextStyle(
-                      color: (_itemStatus[item.id] ?? false)
-                          ? AppColors.statusCompletedText
-                          : (isDark ? AppColors.slate200 : AppColors.slate600),
-                    ),
-                  ),
-                ),
+          CheckboxListTile(
+            value: _itemStatus[item.id] ?? false,
+            onChanged: (value) =>
+                setState(() => _itemStatus[item.id] = value ?? false),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(
+              'Marcar como feito',
+              style: AppTypography.caption.copyWith(
+                color: isDark ? AppColors.slate300 : AppColors.slate600,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => setState(() => _itemStatus[item.id] = false),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: (_itemStatus[item.id] ?? false)
-                          ? (isDark ? AppColors.slate600 : AppColors.slate300)
-                          : AppColors.danger,
-                    ),
-                    backgroundColor: (_itemStatus[item.id] ?? false)
-                        ? Colors.transparent
-                        : AppColors.statusFailedBg,
-                  ),
-                  child: Text(
-                    'Fail',
-                    style: TextStyle(
-                      color: (_itemStatus[item.id] ?? false)
-                          ? (isDark ? AppColors.slate200 : AppColors.slate600)
-                          : AppColors.statusFailedText,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
+            activeColor: AppColors.success,
           ),
           TextField(
             controller: observationController,
             maxLines: 2,
             decoration: const InputDecoration(
-              labelText: 'Observation (optional)',
+              labelText: 'Observação (opcional)',
             ),
           ),
           const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
-                child: ElevatedButton(
-                  onPressed: () => _saveItem(item),
-                  child: const Text('Save item'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: uploading ? null : () => _addEvidence(item),
+                  onPressed: () => _queueEvidence(item),
                   icon: uploading
                       ? const SizedBox(
                           width: 14,
@@ -410,7 +613,11 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.camera_alt),
-                  label: Text(item.obrigatorioFoto ? 'Evidence *' : 'Evidence'),
+                  label: Text(
+                    item.obrigatorioFoto
+                        ? 'Evidência * (${_pendingEvidence[item.id]?.length ?? 0})'
+                        : 'Evidência (${_pendingEvidence[item.id]?.length ?? 0})',
+                  ),
                 ),
               ),
             ],
@@ -420,14 +627,15 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
     );
   }
 
-  String valLabel(ExecutionChecklistItem item, bool status) {
-    if (status) {
-      return item.critico ? 'Conforme (critico)' : 'Conforme';
-    }
-    return item.critico ? 'Nao conforme (critico)' : 'Nao conforme';
+  Widget _buildReviewButton() {
+    return ElevatedButton.icon(
+      onPressed: _execution == null ? null : _openReview,
+      icon: const Icon(Icons.check_circle_outline),
+      label: const Text('Revisar e finalizar'),
+    );
   }
 
-  Widget _buildSignatureSection(bool isDark) {
+  Widget _buildFinalizedActions(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -436,72 +644,44 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
         border: Border.all(
           color: isDark ? AppColors.borderDefaultDark : AppColors.borderLight,
         ),
-        boxShadow: isDark
-            ? []
-            : [
-                BoxShadow(
-                  color: AppColors.shadow.withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Digital Signature',
+            'Execução finalizada',
             style: AppTypography.headline3.copyWith(
               color: isDark ? Colors.white : AppColors.textPrimary,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 12),
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.slate200),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Signature(
-              controller: _signatureController,
-              backgroundColor: Colors.white,
-            ),
+          ElevatedButton.icon(
+            onPressed: _viewReport,
+            icon: const Icon(Icons.picture_as_pdf),
+            label: const Text('Visualizar PDF'),
           ),
           const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => _signatureController.clear(),
-              icon: const Icon(Icons.clear),
-              label: const Text('Clear'),
-            ),
+          OutlinedButton.icon(
+            onPressed: _downloadReport,
+            icon: const Icon(Icons.share_outlined),
+            label: const Text('Compartilhar PDF'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _goToDashboard,
+            icon: const Icon(Icons.dashboard_outlined),
+            label: const Text('Voltar ao dashboard'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFinalizeButton() {
-    return ElevatedButton.icon(
-      onPressed: _isFinalizing ? null : _finalizeExecution,
-      icon: _isFinalizing
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.check),
-      label: Text(_isFinalizing ? 'Finalizing...' : 'Finalize'),
-    );
-  }
-
-  Widget _buildReportButton() {
-    return OutlinedButton.icon(
-      onPressed: _downloadReport,
-      icon: const Icon(Icons.picture_as_pdf),
-      label: const Text('Download PDF Report'),
+  void _goToDashboard() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const DashboardScreen()),
+      (route) => false,
     );
   }
 
@@ -547,8 +727,12 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
     }
 
     final orderId = int.tryParse(_orderIdController.text);
-    if (orderId == null || _qrPayload == null) {
-      _showSnack('Provide order id and scan QR');
+    if (orderId == null) {
+      _showSnack('Provide order id');
+      return;
+    }
+    if (_isMaintenanceOrder() && (_qrPayload == null || _qrPayload!.isEmpty)) {
+      _showSnack('Leia o QR code');
       return;
     }
 
@@ -559,7 +743,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
       final response = await ExecutionService.startExecution(
         token: token,
         maintenanceOrderId: orderId,
-        qrCodePayload: _qrPayload!,
+        qrCodePayload: _qrPayload,
         deviceId: deviceId,
         latitude: position.latitude,
         longitude: position.longitude,
@@ -568,6 +752,10 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
 
       setState(() {
         _execution = response;
+        _serviceDescriptionController.text = '';
+        for (final item in response.checklistItems) {
+          _itemStatus.putIfAbsent(item.id, () => false);
+        }
       });
     } catch (e) {
       _showSnack(e.toString());
@@ -576,92 +764,53 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
     }
   }
 
-  Future<void> _saveItem(ExecutionChecklistItem item) async {
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token == null || _execution == null) return;
-
-    final status = _itemStatus[item.id] ?? false;
-    final observation = _observations[item.id]?.text;
-
-    try {
-      final response = await ExecutionService.recordItem(
-        token: token,
-        executionId: _execution!.executionId,
-        checklistItemId: item.id,
-        status: status,
-        observation: observation,
-      );
-      setState(() {
-        _executionItemIds[item.id] = response.id;
-      });
-      _showSnack('Item saved');
-    } catch (e) {
-      _showSnack(e.toString());
-    }
-  }
-
-  Future<void> _addEvidence(ExecutionChecklistItem item) async {
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token == null || _execution == null) return;
-
-    final execItemId = _executionItemIds[item.id];
-    if (execItemId == null) {
-      _showSnack('Save the item before attaching evidence');
-      return;
-    }
-
+  Future<void> _queueEvidence(ExecutionChecklistItem item) async {
     final picker = ImagePicker();
     final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
     if (photo == null) return;
-
-    setState(() => _uploadingEvidence[item.id] = true);
-    try {
-      final bytes = await photo.readAsBytes();
-      await ExecutionService.uploadEvidence(
-        token: token,
-        checklistExecutionItemId: execItemId,
-        fileBytes: bytes,
-        fileName: photo.name,
+    final bytes = await photo.readAsBytes();
+    setState(() {
+      final list = _pendingEvidence.putIfAbsent(item.id, () => []);
+      list.add(LocalPhoto(
+        bytes: bytes,
+        name: photo.name,
         mimeType: 'image/jpeg',
-      );
-      _showSnack('Evidence uploaded');
-    } catch (e) {
-      _showSnack(e.toString());
-    } finally {
-      setState(() => _uploadingEvidence[item.id] = false);
+      ));
+    });
+  }
+
+  Future<void> _openReview() async {
+    if (_execution == null) return;
+    final items = _execution!.checklistItems;
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExecutionReviewScreen(
+          executionId: _execution!.executionId,
+          items: items,
+          itemStatus: _itemStatus,
+          observations: _observations,
+          pendingEvidence: _pendingEvidence,
+          orderType: _execution!.orderType,
+          serviceDescriptionController: _serviceDescriptionController,
+        ),
+      ),
+    );
+    if (result == true && mounted) {
+      setState(() => _isFinalized = true);
+      _showSnack('Execução finalizada');
     }
   }
 
-  Future<void> _finalizeExecution() async {
+  void _viewReport() {
     if (_execution == null) return;
-    if (_signatureController.isEmpty) {
-      _showSnack('Signature required');
-      return;
-    }
-
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token == null) return;
-
-    setState(() => _isFinalizing = true);
-    try {
-      final signatureBytes = await _signatureController.toPngBytes();
-      if (signatureBytes == null) {
-        _showSnack('Failed to generate signature');
-        return;
-      }
-      final base64Signature = base64Encode(signatureBytes);
-
-      await ExecutionService.finalizeExecution(
-        token: token,
-        executionId: _execution!.executionId,
-        signatureBase64: base64Signature,
-      );
-      _showSnack('Execution finalized');
-    } catch (e) {
-      _showSnack(e.toString());
-    } finally {
-      setState(() => _isFinalizing = false);
-    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ExecutionReportPreviewScreen(
+          executionId: _execution!.executionId,
+        ),
+      ),
+    );
   }
 
   Future<void> _downloadReport() async {
@@ -708,6 +857,27 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
   void _showSnack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _executionTitle() {
+    final type = _execution?.orderType;
+    if (type == 'CONSERTO') return 'Repair Execution';
+    if (type == 'OUTROS') return 'Service Execution';
+    if (type == 'MANUTENCAO') return 'Maintenance Execution';
+    return _isMaintenanceOrder() ? 'Maintenance Execution' : 'Service Execution';
+  }
+
+  String _startCardTitle() {
+    final type = _execution?.orderType ?? widget.orderType;
+    if (type == 'CONSERTO') return 'Start Repair';
+    if (type == 'OUTROS') return 'Start Service';
+    if (type == 'MANUTENCAO') return 'Start Maintenance';
+    return 'Start Execution';
+  }
+
+  bool _isMaintenanceOrder() {
+    final type = _execution?.orderType ?? widget.orderType;
+    return type == null || type == 'MANUTENCAO';
   }
 }
 

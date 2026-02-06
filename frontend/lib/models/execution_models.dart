@@ -3,23 +3,64 @@ class ExecutionStartResponse {
   final int maintenanceOrderId;
   final int equipmentId;
   final List<ExecutionChecklistItem> checklistItems;
+  final String orderType;
+  final String? problemDescription;
 
   ExecutionStartResponse({
     required this.executionId,
     required this.maintenanceOrderId,
     required this.equipmentId,
     required this.checklistItems,
+    required this.orderType,
+    this.problemDescription,
   });
 
   factory ExecutionStartResponse.fromJson(Map<String, dynamic> json) {
-    final items = (json['checklistItems'] as List)
+    final items = (json['checklistItems'] as List? ?? [])
         .map((item) => ExecutionChecklistItem.fromJson(item))
         .toList();
     return ExecutionStartResponse(
       executionId: json['executionId'],
       maintenanceOrderId: json['maintenanceOrderId'],
-      equipmentId: json['equipmentId'],
+      equipmentId: json['equipmentId'] ?? 0,
       checklistItems: items,
+      orderType: json['orderType'] ?? json['tipo'] ?? 'MANUTENCAO',
+      problemDescription: json['problemDescription'],
+    );
+  }
+}
+
+class ExecutionLookupResponse {
+  final int maintenanceOrderId;
+  final String? maintenanceOrderStatus;
+  final int equipmentId;
+  final String? equipmentName;
+  final String? equipmentCode;
+  final String? clientName;
+  final String? scheduledFor;
+  final String qrCodePayload;
+
+  ExecutionLookupResponse({
+    required this.maintenanceOrderId,
+    required this.maintenanceOrderStatus,
+    required this.equipmentId,
+    required this.equipmentName,
+    required this.equipmentCode,
+    required this.clientName,
+    required this.scheduledFor,
+    required this.qrCodePayload,
+  });
+
+  factory ExecutionLookupResponse.fromJson(Map<String, dynamic> json) {
+    return ExecutionLookupResponse(
+      maintenanceOrderId: json['maintenanceOrderId'],
+      maintenanceOrderStatus: json['maintenanceOrderStatus'],
+      equipmentId: json['equipmentId'],
+      equipmentName: json['equipmentName'],
+      equipmentCode: json['equipmentCode'],
+      clientName: json['clientName'],
+      scheduledFor: json['scheduledFor'],
+      qrCodePayload: json['qrCodePayload'] ?? '',
     );
   }
 }

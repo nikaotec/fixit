@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../l10n/app_localizations.dart';
 import '../models/order.dart';
 import '../providers/user_provider.dart';
 import '../services/order_service.dart';
+import '../services/api_service.dart';
 import 'order_details_screen.dart';
 import 'create_service_order_screen.dart';
 
@@ -12,20 +18,62 @@ class ServiceOrdersScreen extends StatefulWidget {
   const ServiceOrdersScreen({super.key});
 
   @override
-  State<ServiceOrdersScreen> createState() => _ServiceOrdersScreenState();
+  State<ServiceOrdersScreen> createState() => ServiceOrdersScreenState();
 }
 
-class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
+class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
   String _searchQuery = '';
   String _selectedFilter = 'all';
   bool _isLoading = false;
   String? _error;
   List<Order> _orders = [];
+  String? _lastToken;
+  WebSocketChannel? _ordersChannel;
+  StreamSubscription? _ordersSub;
 
   @override
   void initState() {
     super.initState();
     _loadOrders();
+  }
+
+  void refreshOrders() {
+    _loadOrders();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final token = Provider.of<UserProvider>(context).token;
+    if (token != null && token != _lastToken) {
+      _lastToken = token;
+      _connectRealtime(token);
+      _loadOrders();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ordersSub?.cancel();
+    _ordersChannel?.sink.close();
+    super.dispose();
+  }
+
+  void _connectRealtime(String token) {
+    _ordersSub?.cancel();
+    _ordersChannel?.sink.close();
+    final url = '${ApiService.wsBaseUrl}/ws/orders?token=$token';
+    _ordersChannel = IOWebSocketChannel.connect(Uri.parse(url));
+    _ordersSub = _ordersChannel!.stream.listen((event) {
+      try {
+        final data = jsonDecode(event);
+        if (data is Map && data['type'] == 'order_updated') {
+          _loadOrders();
+        }
+      } catch (_) {
+        _loadOrders();
+      }
+    });
   }
 
   Future<void> _loadOrders() async {
@@ -35,9 +83,7 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     });
     try {
       final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) {
-        throw Exception('Usuário não autenticado');
-      }
+      if (token == null) return;
       final list = await OrderService.getAll(token: token);
       setState(() => _orders = list);
     } catch (e) {
@@ -50,13 +96,16 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
+    final currentUserId =
+        int.tryParse(Provider.of<UserProvider>(context).id ?? '');
     final background =
         isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight;
     final orders = _filteredOrders();
 
     return Scaffold(
       backgroundColor: background,
-      appBar: AppBar(title: const Text('Orders')),
+      appBar: AppBar(title: Text(l10n.ordersTitle)),
       body: SafeArea(
         child: Column(
           children: [
@@ -65,7 +114,7 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Service Orders',
+                  l10n.serviceOrdersTitle,
                   style: AppTypography.headline3.copyWith(
                     color: isDark ? Colors.white : AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -73,9 +122,9 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
                 ),
               ),
             ),
-            _buildSearchBar(isDark),
-            _buildFilters(isDark),
-            Expanded(child: _buildBody(orders, isDark)),
+            _buildSearchBar(isDark, l10n),
+            _buildFilters(isDark, l10n),
+            Expanded(child: _buildBody(orders, isDark, l10n, currentUserId)),
           ],
         ),
       ),
@@ -99,7 +148,7 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
   List<Order> _filteredOrders() {
     return _orders.where((order) {
       if (_selectedFilter != 'all') {
-        final status = _mapStatus(order.status).toLowerCase();
+        final status = _statusKey(order.status);
         if (status != _selectedFilter) return false;
       }
       if (_searchQuery.isEmpty) return true;
@@ -111,14 +160,19 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     }).toList();
   }
 
-  Widget _buildBody(List<Order> orders, bool isDark) {
+  Widget _buildBody(
+    List<Order> orders,
+    bool isDark,
+    AppLocalizations l10n,
+    int? currentUserId,
+  ) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error != null) {
       return Center(
         child: Text(
-          'Erro ao carregar ordens',
+          l10n.ordersLoadError,
           style: AppTypography.bodyText.copyWith(
             color: isDark ? AppColors.slate300 : AppColors.slate600,
           ),
@@ -128,7 +182,7 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     if (orders.isEmpty) {
       return Center(
         child: Text(
-          'Nenhuma ordem encontrada',
+          l10n.noOrdersFound,
           style: AppTypography.bodyText.copyWith(
             color: isDark ? AppColors.slate300 : AppColors.slate600,
           ),
@@ -143,6 +197,11 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
         final order = orders[index];
         return _OrderCard(
           order: order,
+          statusColor: _statusColor(order.status, isDark),
+          roleLabel: _roleLabelForOrder(order, currentUserId, l10n),
+          statusLabel: _statusLabel(order.status, l10n),
+          locationNotSpecified: l10n.locationNotSpecified,
+          noScheduleLabel: l10n.noSchedule,
           onTap: () {
             Navigator.push(
               context,
@@ -156,14 +215,28 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     );
   }
 
-  Widget _buildSearchBar(bool isDark) {
+  String? _roleLabelForOrder(
+    Order order,
+    int? currentUserId,
+    AppLocalizations l10n,
+  ) {
+    if (currentUserId == null) return null;
+    final isCreator = order.criador?.id == currentUserId;
+    final isResponsible = order.responsavel?.id == currentUserId;
+    if (isCreator && isResponsible) return l10n.roleCreatorResponsible;
+    if (isCreator) return l10n.roleCreator;
+    if (isResponsible) return l10n.roleResponsible;
+    return null;
+  }
+
+  Widget _buildSearchBar(bool isDark, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: TextField(
         onChanged: (value) => setState(() => _searchQuery = value),
         decoration: InputDecoration(
           prefixIcon: const Icon(Icons.search),
-          hintText: 'Search orders',
+          hintText: l10n.searchOrdersPlaceholder,
           filled: true,
           fillColor: isDark ? AppColors.slate800 : AppColors.slate50,
         ),
@@ -171,13 +244,13 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     );
   }
 
-  Widget _buildFilters(bool isDark) {
+  Widget _buildFilters(bool isDark, AppLocalizations l10n) {
     final chips = [
-      _FilterItem(label: 'All', value: 'all'),
-      _FilterItem(label: 'Pending', value: 'pending'),
-      _FilterItem(label: 'In Progress', value: 'in progress'),
-      _FilterItem(label: 'Overdue', value: 'overdue'),
-      _FilterItem(label: 'Completed', value: 'completed'),
+      _FilterItem(label: l10n.all, value: 'all'),
+      _FilterItem(label: l10n.statusPending, value: 'pending'),
+      _FilterItem(label: l10n.statusInProgress, value: 'in_progress'),
+      _FilterItem(label: l10n.statusOverdue, value: 'overdue'),
+      _FilterItem(label: l10n.statusFinished, value: 'completed'),
     ];
     return SizedBox(
       height: 44,
@@ -187,14 +260,15 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
         itemBuilder: (context, index) {
           final item = chips[index];
           final isActive = item.value == _selectedFilter;
+          final statusColor = _filterColor(item.value, isDark);
           return ChoiceChip(
             label: Text(item.label),
             selected: isActive,
-            selectedColor: AppColors.primary.withOpacity(0.15),
+            selectedColor: statusColor.withOpacity(0.15),
             labelStyle: TextStyle(
               color: isActive
-                  ? AppColors.primary
-                  : (isDark ? AppColors.slate300 : AppColors.slate600),
+                  ? statusColor
+                  : statusColor.withOpacity(isDark ? 0.7 : 0.9),
               fontWeight: FontWeight.w600,
             ),
             onSelected: (_) =>
@@ -208,20 +282,81 @@ class _ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     );
   }
 
-  String _mapStatus(String raw) {
-    switch (raw) {
-      case 'EM_ANDAMENTO':
-        return 'In Progress';
-      case 'FINALIZADA':
-        return 'Completed';
-      case 'ATRASADA':
-        return 'Overdue';
-      case 'CANCELADA':
-        return 'Cancelled';
+  Color _filterColor(String value, bool isDark) {
+    switch (value) {
+      case 'completed':
+        return isDark
+            ? AppColors.statusCompletedTextDark
+            : AppColors.statusCompletedText;
+      case 'overdue':
+        return isDark
+            ? AppColors.statusFailedTextDark
+            : AppColors.statusFailedText;
+      case 'in_progress':
+        return isDark
+            ? AppColors.statusInProgressTextDark
+            : AppColors.statusInProgressText;
+      case 'pending':
+        return isDark
+            ? AppColors.statusPendingTextDark
+            : AppColors.statusPendingText;
       default:
-        return 'Pending';
+        return isDark ? Colors.white : AppColors.textPrimary;
     }
   }
+
+  String _statusKey(String raw) {
+    switch (raw) {
+      case 'EM_ANDAMENTO':
+        return 'in_progress';
+      case 'FINALIZADA':
+        return 'completed';
+      case 'ATRASADA':
+        return 'overdue';
+      case 'CANCELADA':
+        return 'cancelled';
+      default:
+        return 'pending';
+    }
+  }
+
+  String _statusLabel(String raw, AppLocalizations l10n) {
+    switch (_statusKey(raw)) {
+      case 'in_progress':
+        return l10n.statusInProgress;
+      case 'completed':
+        return l10n.statusFinished;
+      case 'overdue':
+        return l10n.statusOverdue;
+      case 'cancelled':
+        return l10n.statusCancelled;
+      default:
+        return l10n.statusPending;
+    }
+  }
+
+  Color _statusColor(String raw, bool isDark) {
+    switch (raw) {
+      case 'FINALIZADA':
+        return isDark
+            ? AppColors.statusCompletedTextDark
+            : AppColors.statusCompletedText;
+      case 'ATRASADA':
+      case 'CANCELADA':
+        return isDark
+            ? AppColors.statusFailedTextDark
+            : AppColors.statusFailedText;
+      case 'EM_ANDAMENTO':
+        return isDark
+            ? AppColors.statusInProgressTextDark
+            : AppColors.statusInProgressText;
+      default:
+        return isDark
+            ? AppColors.statusPendingTextDark
+            : AppColors.statusPendingText;
+    }
+  }
+
 }
 
 class _FilterItem {
@@ -234,13 +369,26 @@ class _FilterItem {
 class _OrderCard extends StatelessWidget {
   final Order order;
   final VoidCallback onTap;
+  final Color statusColor;
+  final String? roleLabel;
+  final String statusLabel;
+  final String locationNotSpecified;
+  final String noScheduleLabel;
 
-  const _OrderCard({required this.order, required this.onTap});
+  const _OrderCard({
+    required this.order,
+    required this.onTap,
+    required this.statusColor,
+    this.roleLabel,
+    required this.statusLabel,
+    required this.locationNotSpecified,
+    required this.noScheduleLabel,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final status = _mapStatus(order.status);
+    final status = statusLabel;
     final location = _buildLocation(order);
     final dueIn = _formatDue(order.dataPrevista);
     return InkWell(
@@ -252,14 +400,14 @@ class _OrderCard extends StatelessWidget {
           color: isDark ? AppColors.surfaceDarkTheme : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isDark ? AppColors.borderDefaultDark : AppColors.borderLight,
+            color: statusColor.withOpacity(isDark ? 0.35 : 0.25),
           ),
           boxShadow: isDark
               ? []
               : [
                   BoxShadow(
-                    color: AppColors.shadow.withOpacity(0.08),
-                    blurRadius: 12,
+                    color: statusColor.withOpacity(0.25),
+                    blurRadius: 14,
                     offset: const Offset(0, 6),
                   ),
                 ],
@@ -288,7 +436,7 @@ class _OrderCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                _StatusBadge(status: status),
+                _StatusChip(status: status),
               ],
             ),
             const SizedBox(height: 8),
@@ -301,6 +449,10 @@ class _OrderCard extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
+                if (roleLabel != null) ...[
+                  _roleChip(roleLabel!, isDark),
+                  const SizedBox(width: 8),
+                ],
                 _chip(order.priority, isDark),
                 const SizedBox(width: 8),
                 _chip('ID #${order.id}', isDark),
@@ -320,31 +472,48 @@ class _OrderCard extends StatelessWidget {
     );
   }
 
+  Widget _roleChip(String label, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.slate800 : AppColors.slate100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: AppTypography.captionSmall.copyWith(
+          color: isDark ? AppColors.slate200 : AppColors.slate700,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   String _buildLocation(Order order) {
     final equipmentLocation = order.equipamento.localizacao;
     if (equipmentLocation != null && equipmentLocation.isNotEmpty) {
       return equipmentLocation;
     }
     final client = order.cliente;
-    if (client == null) return 'Location not specified';
+    if (client == null) return locationNotSpecified;
     final parts = [
       if (client.rua != null) client.rua,
       if (client.numero != null) client.numero,
       if (client.bairro != null) client.bairro,
       if (client.cidade != null) client.cidade,
     ].where((e) => e != null && e!.isNotEmpty).map((e) => e!).toList();
-    if (parts.isEmpty) return 'Location not specified';
+    if (parts.isEmpty) return locationNotSpecified;
     return parts.join(' • ');
   }
 
   String _formatDue(DateTime? due) {
-    if (due == null) return 'No schedule';
+    if (due == null) return noScheduleLabel;
     final now = DateTime.now();
     final diff = due.difference(now);
-    if (diff.inMinutes < 0) return 'Overdue';
+    if (diff.inMinutes < 0) return statusLabel;
     if (diff.inHours < 1) return '${diff.inMinutes} min';
-    if (diff.inDays < 1) return '${diff.inHours} hrs';
-    return '${diff.inDays} days';
+    if (diff.inDays < 1) return '${diff.inHours} h';
+    return '${diff.inDays} dias';
   }
 
   Widget _chip(String label, bool isDark) {
@@ -364,59 +533,43 @@ class _OrderCard extends StatelessWidget {
     );
   }
 
-  String _mapStatus(String raw) {
-    switch (raw) {
-      case 'EM_ANDAMENTO':
-        return 'In Progress';
-      case 'FINALIZADA':
-        return 'Completed';
-      case 'ATRASADA':
-        return 'Overdue';
-      case 'CANCELADA':
-        return 'Cancelled';
-      default:
-        return 'Pending';
-    }
-  }
 }
 
-class _StatusBadge extends StatelessWidget {
+class _StatusChip extends StatelessWidget {
   final String status;
 
-  const _StatusBadge({required this.status});
+  const _StatusChip({required this.status});
 
   @override
   Widget build(BuildContext context) {
     Color bg;
     Color text;
-    switch (status) {
-      case 'Overdue':
+    final normalized = status.toLowerCase();
+    if (normalized.contains('atras')) {
         bg = AppColors.statusFailedBg;
         text = AppColors.statusFailedText;
-        break;
-      case 'In Progress':
+    } else if (normalized.contains('andamento')) {
         bg = AppColors.statusInProgressBg;
         text = AppColors.statusInProgressText;
-        break;
-      case 'Completed':
+    } else if (normalized.contains('conclu') ||
+        normalized.contains('finaliz')) {
         bg = AppColors.statusCompletedBg;
         text = AppColors.statusCompletedText;
-        break;
-      default:
+    } else {
         bg = AppColors.statusPendingBg;
         text = AppColors.statusPendingText;
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         status,
         style: AppTypography.captionSmall.copyWith(
           color: text,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

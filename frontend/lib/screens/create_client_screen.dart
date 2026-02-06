@@ -477,11 +477,10 @@ class _CreateClientScreenState extends State<CreateClientScreen> {
           ),
           keyboardType: TextInputType.number,
           validator: (value) {
-            if (_clientType == ClientType.individual) {
-              return Validators.validateCPF(value);
-            } else {
-              return Validators.validateCNPJ(value);
+            if (value == null || value.trim().isEmpty) {
+              return null;
             }
+            return Validators.validateDocumento(value);
           },
         ),
         const SizedBox(height: 16),

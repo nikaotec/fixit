@@ -159,5 +159,118 @@
         "type": "int"
       }
     }
-  }
+  },
+  "ordersTitle": "Ordens",
+  "serviceOrdersTitle": "Ordens de Serviço",
+  "searchOrdersPlaceholder": "Buscar ordens",
+  "statusPending": "Pendente",
+  "statusCancelled": "Cancelada",
+  "locationNotSpecified": "Local não informado",
+  "noSchedule": "Sem agendamento",
+  "orderDetailsTitle": "Detalhes da Ordem",
+  "startMaintenance": "Iniciar manutenção",
+  "clientAndLocation": "Cliente e localização",
+  "assignedChecklist": "Checklist atribuído",
+  "checklistNotAssigned": "Checklist não atribuído",
+  "assignedTechnician": "Técnico atribuído",
+  "unassigned": "Não atribuído",
+  "reassign": "Reatribuir",
+  "createdBy": "Criado por {name}",
+  "@createdBy": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "roleCreator": "Criador",
+  "roleResponsible": "Responsável",
+  "roleCreatorResponsible": "Criador e responsável",
+  "checklistTemplates": "Modelos de checklist",
+  "techniciansLabel": "Técnicos",
+  "forgotPassword": "Esqueceu a senha?",
+  "passwordMin6": "A senha deve ter pelo menos 6 caracteres",
+  "noAccountQuestion": "Não tem uma conta?",
+  "createAccount": "Criar conta",
+  "englishLabel": "Inglês",
+  "portugueseLabel": "Português",
+  "forgotPasswordTitle": "Esqueceu a senha",
+  "forgotPasswordBody": "A redefinição de senha é gerenciada pelo administrador no momento. Entre em contato para redefinir suas credenciais.",
+  "registerTitle": "Criar sua conta",
+  "emailRequired": "Informe seu e-mail",
+  "emailInvalid": "Informe um e-mail válido",
+  "passwordLabelText": "Senha",
+  "passwordHint": "Crie uma senha",
+  "passwordRequired": "Informe uma senha",
+  "passwordMin8": "A senha deve ter pelo menos 8 caracteres",
+  "confirmPasswordLabel": "Confirmar senha",
+  "confirmPasswordHint": "Repita sua senha",
+  "confirmPasswordRequired": "Confirme sua senha",
+  "passwordsDoNotMatch": "As senhas não conferem",
+  "initialLanguage": "Idioma inicial",
+  "alreadyHaveAccount": "Já tem uma conta?",
+  "logIn": "Entrar",
+  "termsPrefix": "Ao criar uma conta, você concorda com nossos ",
+  "termsOfService": "Termos de Serviço",
+  "andConjunction": " e ",
+  "privacyPolicy": "Política de Privacidade",
+  "orderDetailsHeading": "Detalhes da Ordem",
+  "orderTypeLabel": "Tipo da ordem",
+  "orderTypeMaintenance": "Manutenção",
+  "orderTypeRepair": "Conserto",
+  "orderTypeOther": "Outros",
+  "problemDescriptionLabel": "Descrição do problema",
+  "problemDescriptionHint": "Descreva o problema a ser corrigido",
+  "problemDescriptionRequired": "Descreva o problema",
+  "problemDescriptionEmpty": "Nenhuma descrição informada",
+  "brandLabel": "Marca",
+  "modelLabel": "Modelo",
+  "brandRequired": "Informe a marca",
+  "modelRequired": "Informe o modelo",
+  "voiceInput": "Entrada por voz",
+  "listening": "Ouvindo...",
+  "transcribing": "Transcrevendo",
+  "portugueseBrazil": "Português (BR)",
+  "englishUS": "Inglês (EUA)",
+  "voiceNotAvailable": "Entrada de voz indisponível",
+  "stopListening": "Parar",
+  "selectEquipmentChecklist": "Selecione equipamento e checklist",
+  "orderCreatedSuccess": "Ordem criada com sucesso",
+  "userNotAuthenticated": "Usuário não autenticado",
+  "errorLoadingData": "Erro ao carregar dados: {error}",
+  "@errorLoadingData": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "errorCreatingOrder": "Erro ao criar ordem: {error}",
+  "@errorCreatingOrder": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "serverRejectedTechnician": "O servidor não aceitou o técnico selecionado",
+  "scheduledDate": "Data agendada",
+  "selectDate": "Selecionar data",
+  "saving": "Salvando...",
+  "createOrder": "Criar Ordem",
+  "responsibleTechnician": "Técnico responsável",
+  "priorityLabel": "Prioridade",
+  "priorityHigh": "Alta",
+  "priorityMedium": "Média",
+  "priorityLow": "Baixa",
+  "doNotAssignNow": "Não atribuir agora",
+  "meLabel": "Eu",
+  "meWithName": "Eu ({name})",
+  "@meWithName": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "meUnavailable": "Eu (indisponível)"
+  ,
+  "recentOrdersError": "Erro ao carregar ordens recentes",
+  "noRecentOrders": "Sem ordens recentes",
+  "createServiceOrderTitle": "Criar Ordem de Serviço"
+  ,
+  "ordersLoadError": "Erro ao carregar ordens",
+  "noOrdersFound": "Nenhuma ordem encontrada"
 }

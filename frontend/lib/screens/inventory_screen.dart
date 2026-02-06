@@ -6,7 +6,7 @@ import '../theme/app_typography.dart';
 import '../providers/user_provider.dart';
 import '../services/equipment_service.dart';
 import 'add_edit_equipment_screen.dart';
-import 'qr_flow_screen.dart';
+import 'maintenance_execution_entry_screen.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({Key? key}) : super(key: key);
@@ -21,12 +21,23 @@ class _InventoryScreenState extends State<InventoryScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _equipmentList = [];
   List<Map<String, dynamic>> _filteredList = [];
+  String? _lastToken;
 
   @override
   void initState() {
     super.initState();
     _loadEquipment();
     _searchController.addListener(_filterList);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final token = Provider.of<UserProvider>(context, listen: false).token;
+    if (token != null && token != _lastToken) {
+      _lastToken = token;
+      _loadEquipment();
+    }
   }
 
   @override
@@ -39,14 +50,15 @@ class _InventoryScreenState extends State<InventoryScreen> {
     setState(() => _isLoading = true);
     try {
       final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token != null) {
-        final list = await EquipmentService.getAll(token: token);
-        if (mounted) {
-          setState(() {
-            _equipmentList = list;
-            _filterList();
-          });
-        }
+      if (token == null) {
+        return;
+      }
+      final list = await EquipmentService.getAll(token: token);
+      if (mounted) {
+        setState(() {
+          _equipmentList = list;
+          _filterList();
+        });
       }
     } catch (e) {
       print('Error loading equipment: $e');
@@ -163,7 +175,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const QRFlowScreen(),
+                  builder: (context) => const MaintenanceExecutionEntryScreen(),
                 ),
               );
             },

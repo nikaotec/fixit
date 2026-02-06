@@ -5,11 +5,13 @@ import '../services/api_service.dart';
 import '../services/google_auth_service.dart';
 
 class UserProvider with ChangeNotifier {
+  String? _id;
   String? _token;
   String? _role;
   String? _name;
   String? _email;
 
+  String? get id => _id;
   bool get isAuthenticated => _token != null;
   String? get token => _token;
   String? get role => _role;
@@ -61,6 +63,7 @@ class UserProvider with ChangeNotifier {
     if (_token == null) return;
     try {
       final data = await ApiService.getUserProfile(_token!);
+      _id = data['id']?.toString();
       _name = data['name'];
       _email = data['email'];
       _role = data['role']; // Assuming backend returns role
@@ -69,6 +72,7 @@ class UserProvider with ChangeNotifier {
       if (_name != null) await prefs.setString('name', _name!);
       if (_email != null) await prefs.setString('email', _email!);
       if (_role != null) await prefs.setString('role', _role!);
+      if (_id != null) await prefs.setString('userId', _id!);
 
       debugPrint('✅ User profile updated: $_name');
       notifyListeners();
@@ -85,11 +89,13 @@ class UserProvider with ChangeNotifier {
     try {
       debugPrint('🔵 Attempting login for: $email');
       final response = await ApiService.login(email, password);
+      _id = response['id']?.toString();
       _token = response['token'];
       _role = response['role'];
       _name = response['name'];
 
       final prefs = await SharedPreferences.getInstance();
+      if (_id != null) await prefs.setString('userId', _id!);
       await prefs.setString('token', _token!);
       await prefs.setString('role', _role!);
       await prefs.setString('name', _name!);
@@ -126,11 +132,13 @@ class UserProvider with ChangeNotifier {
 
       // Auto-login after successful registration
       if (response.containsKey('token')) {
+        _id = response['id']?.toString();
         _token = response['token'];
         _role = response['role'];
         _name = response['name'];
 
         final prefs = await SharedPreferences.getInstance();
+        if (_id != null) await prefs.setString('userId', _id!);
         await prefs.setString('token', _token!);
         await prefs.setString('role', _role!);
         await prefs.setString('name', _name!);
@@ -185,11 +193,13 @@ class UserProvider with ChangeNotifier {
       final response = await ApiService.googleLogin(idToken: idToken);
 
       // Step 3: Store user data
+      _id = response['id']?.toString();
       _token = response['token'];
       _role = response['role'];
       _name = response['name'] ?? googleResult['displayName'];
 
       final prefs = await SharedPreferences.getInstance();
+      if (_id != null) await prefs.setString('userId', _id!);
       await prefs.setString('token', _token!);
       await prefs.setString('role', _role!);
       await prefs.setString('name', _name!);

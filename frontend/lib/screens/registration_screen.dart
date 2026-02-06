@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/user_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../l10n/app_localizations.dart';
 
 /// Fixit User Registration Screen
 /// Responsive registration screen that adapts to all screen sizes
@@ -95,6 +96,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.width < 600;
 
@@ -112,7 +114,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Create Your Account',
+          l10n.registerTitle,
           style: AppTypography.headline3.copyWith(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
           ),
@@ -220,10 +222,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                     textInputAction: TextInputAction.next,
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
-                                        return 'Please enter your email';
+                                        return l10n.emailRequired;
                                       }
                                       if (!value.contains('@')) {
-                                        return 'Please enter a valid email';
+                                        return l10n.emailInvalid;
                                       }
                                       return null;
                                     },
@@ -232,15 +234,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   const SizedBox(height: 16),
 
                                   // Language Selector
-                                  _buildLanguageSelector(isDark),
+                                  _buildLanguageSelector(isDark, l10n),
 
                                   const SizedBox(height: 16),
 
                                   // Password
                                   _buildPasswordField(
                                     controller: _passwordController,
-                                    label: 'Password',
-                                    hint: 'Create a password',
+                                    label: l10n.passwordLabelText,
+                                    hint: l10n.passwordHint,
                                     isDark: isDark,
                                     obscureText: _obscurePassword,
                                     onToggleVisibility: () {
@@ -250,10 +252,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                     },
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
-                                        return 'Please enter a password';
+                                        return l10n.passwordRequired;
                                       }
                                       if (value.length < 8) {
-                                        return 'Password must be at least 8 characters';
+                                        return l10n.passwordMin8;
                                       }
                                       return null;
                                     },
@@ -264,8 +266,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   // Confirm Password
                                   _buildPasswordField(
                                     controller: _confirmPasswordController,
-                                    label: 'Confirm Password',
-                                    hint: 'Repeat your password',
+                                    label: l10n.confirmPasswordLabel,
+                                    hint: l10n.confirmPasswordHint,
                                     isDark: isDark,
                                     obscureText: _obscureConfirmPassword,
                                     onToggleVisibility: () {
@@ -278,10 +280,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                     onFieldSubmitted: (_) => _submit(),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
-                                        return 'Please confirm your password';
+                                        return l10n.confirmPasswordRequired;
                                       }
                                       if (value != _passwordController.text) {
-                                        return 'Passwords do not match';
+                                        return l10n.passwordsDoNotMatch;
                                       }
                                       return null;
                                     },
@@ -290,17 +292,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   const SizedBox(height: 40),
 
                                   // Submit Button
-                                  _buildSubmitButton(),
+                                  _buildSubmitButton(l10n),
 
                                   const SizedBox(height: 24),
 
                                   // Login Link
-                                  _buildLoginLink(isDark),
+                                  _buildLoginLink(isDark, l10n),
 
                                   const SizedBox(height: 32),
 
                                   // Legal Notice
-                                  _buildLegalNotice(isDark),
+                                  _buildLegalNotice(isDark, l10n),
 
                                   const SizedBox(height: 16),
                                 ],
@@ -381,21 +383,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildLanguageSelector(bool isDark) {
+  Widget _buildLanguageSelector(bool isDark, AppLocalizations l10n) {
     final languages = [
-      {'code': 'en', 'name': '🇺🇸 English (US)'},
-      {'code': 'es', 'name': '🇪🇸 Spanish'},
-      {'code': 'fr', 'name': '🇫🇷 French'},
-      {'code': 'de', 'name': '🇩🇪 German'},
-      {'code': 'ar', 'name': '🇸🇦 Arabic'},
-      {'code': 'pt', 'name': '🇧🇷 Portuguese'},
+      {'code': 'en', 'name': '🇺🇸 ${l10n.englishLabel} (US)'},
+      {'code': 'es', 'name': '🇪🇸 Espanhol'},
+      {'code': 'fr', 'name': '🇫🇷 Francês'},
+      {'code': 'de', 'name': '🇩🇪 Alemão'},
+      {'code': 'ar', 'name': '🇸🇦 Árabe'},
+      {'code': 'pt', 'name': '🇧🇷 ${l10n.portugueseLabel}'},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Initial Language',
+          l10n.initialLanguage,
           style: AppTypography.label.copyWith(
             color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
           ),
@@ -475,7 +477,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(AppLocalizations l10n) {
     return SizedBox(
       height: 56,
       child: ElevatedButton(
@@ -495,7 +497,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 ),
               )
             : Text(
-                'Create Account',
+                l10n.createAccount,
                 style: AppTypography.button.copyWith(
                   fontSize: 18,
                   letterSpacing: 0.5,
@@ -505,12 +507,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildLoginLink(bool isDark) {
+  Widget _buildLoginLink(bool isDark, AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          'Already have an account? ',
+          l10n.alreadyHaveAccount,
           style: AppTypography.bodyTextSmall.copyWith(
             color: isDark
                 ? AppColors.textSecondaryDark
@@ -527,7 +529,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: Text(
-            'Log in',
+            l10n.logIn,
             style: AppTypography.bodyTextSmall.copyWith(
               color: isDark ? AppColors.primaryDarkTheme : AppColors.primary,
               fontWeight: AppTypography.semiBold,
@@ -538,7 +540,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildLegalNotice(bool isDark) {
+  Widget _buildLegalNotice(bool isDark, AppLocalizations l10n) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -552,9 +554,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   : AppColors.textSecondary,
             ),
             children: [
-              const TextSpan(text: 'By creating an account, you agree to our '),
+              TextSpan(text: l10n.termsPrefix),
               TextSpan(
-                text: 'Terms of Service',
+                text: l10n.termsOfService,
                 style: TextStyle(
                   decoration: TextDecoration.underline,
                   color: isDark
@@ -562,9 +564,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       : AppColors.primary,
                 ),
               ),
-              const TextSpan(text: ' and '),
+              TextSpan(text: l10n.andConjunction),
               TextSpan(
-                text: 'Privacy Policy',
+                text: l10n.privacyPolicy,
                 style: TextStyle(
                   decoration: TextDecoration.underline,
                   color: isDark

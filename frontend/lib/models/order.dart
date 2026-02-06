@@ -2,9 +2,14 @@ class Order {
   final int id;
   final String status;
   final String priority;
+  final String orderType;
+  final String? problemDescription;
+  final String? equipmentBrand;
+  final String? equipmentModel;
   final Equipamento equipamento;
   final Checklist checklist;
   final Cliente? cliente;
+  final UserSummary? criador;
   final UserSummary? responsavel;
   final DateTime? dataPrevista;
   final DateTime? dataCriacao;
@@ -14,9 +19,14 @@ class Order {
     required this.id,
     required this.status,
     required this.priority,
+    required this.orderType,
+    this.problemDescription,
+    this.equipmentBrand,
+    this.equipmentModel,
     required this.equipamento,
     required this.checklist,
     this.cliente,
+    this.criador,
     this.responsavel,
     this.dataPrevista,
     this.dataCriacao,
@@ -28,10 +38,16 @@ class Order {
       id: json['id'],
       status: json['status'],
       priority: json['prioridade'] ?? json['priority'] ?? 'MEDIA',
+      orderType: json['tipo'] ?? json['orderType'] ?? 'MANUTENCAO',
+      problemDescription: json['problemDescription'],
+      equipmentBrand: json['equipmentBrand'],
+      equipmentModel: json['equipmentModel'],
       equipamento: Equipamento.fromJson(json['equipamento'] ?? {}),
       checklist: Checklist.fromJson(json['checklist'] ?? {}),
       cliente:
           json['cliente'] != null ? Cliente.fromJson(json['cliente']) : null,
+      criador:
+          json['criador'] != null ? UserSummary.fromJson(json['criador']) : null,
       responsavel: json['responsavel'] != null
           ? UserSummary.fromJson(json['responsavel'])
           : null,

@@ -2,6 +2,7 @@ package com.nikao.ordemservico.controller;
 
 import com.nikao.ordemservico.domain.User;
 import com.nikao.ordemservico.repository.UserRepository;
+import com.nikao.ordemservico.service.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -17,14 +18,20 @@ public class UserController {
     @Autowired
     PasswordEncoder passwordEncoder;
 
+    @Autowired
+    CurrentUserService currentUserService;
+
     @GetMapping
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        var user = currentUserService.getCurrentUser();
+        return userRepository.findByCompanyId(user.getCompany().getId());
     }
 
     @PostMapping
     public User createUser(@RequestBody User user) {
+        var current = currentUserService.getCurrentUser();
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setCompany(current.getCompany());
         return userRepository.save(user);
     }
 

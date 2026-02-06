@@ -159,5 +159,118 @@
         "type": "int"
       }
     }
-  }
+  },
+  "ordersTitle": "Orders",
+  "serviceOrdersTitle": "Service Orders",
+  "searchOrdersPlaceholder": "Search orders",
+  "statusPending": "Pending",
+  "statusCancelled": "Cancelled",
+  "locationNotSpecified": "Location not specified",
+  "noSchedule": "No schedule",
+  "orderDetailsTitle": "Order Details",
+  "startMaintenance": "Start Maintenance",
+  "clientAndLocation": "Client & Location",
+  "assignedChecklist": "Assigned Checklist",
+  "checklistNotAssigned": "Checklist not assigned",
+  "assignedTechnician": "Assigned Technician",
+  "unassigned": "Unassigned",
+  "reassign": "Reassign",
+  "createdBy": "Created by {name}",
+  "@createdBy": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "roleCreator": "Creator",
+  "roleResponsible": "Responsible",
+  "roleCreatorResponsible": "Creator and responsible",
+  "checklistTemplates": "Checklist Templates",
+  "techniciansLabel": "Technicians",
+  "forgotPassword": "Forgot Password?",
+  "passwordMin6": "Password must be at least 6 characters",
+  "noAccountQuestion": "Don't have an account?",
+  "createAccount": "Create Account",
+  "englishLabel": "English",
+  "portugueseLabel": "Portuguese",
+  "forgotPasswordTitle": "Forgot Password",
+  "forgotPasswordBody": "Password reset is managed by your administrator for now. Contact your manager to reset your credentials.",
+  "registerTitle": "Create Your Account",
+  "emailRequired": "Please enter your email",
+  "emailInvalid": "Please enter a valid email",
+  "passwordLabelText": "Password",
+  "passwordHint": "Create a password",
+  "passwordRequired": "Please enter a password",
+  "passwordMin8": "Password must be at least 8 characters",
+  "confirmPasswordLabel": "Confirm Password",
+  "confirmPasswordHint": "Repeat your password",
+  "confirmPasswordRequired": "Please confirm your password",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "initialLanguage": "Initial Language",
+  "alreadyHaveAccount": "Already have an account?",
+  "logIn": "Log in",
+  "termsPrefix": "By creating an account, you agree to our ",
+  "termsOfService": "Terms of Service",
+  "andConjunction": " and ",
+  "privacyPolicy": "Privacy Policy",
+  "orderDetailsHeading": "Order Details",
+  "orderTypeLabel": "Order type",
+  "orderTypeMaintenance": "Maintenance",
+  "orderTypeRepair": "Repair",
+  "orderTypeOther": "Other",
+  "problemDescriptionLabel": "Problem description",
+  "problemDescriptionHint": "Describe the problem to be fixed",
+  "problemDescriptionRequired": "Please describe the problem",
+  "problemDescriptionEmpty": "No problem description provided",
+  "brandLabel": "Brand",
+  "modelLabel": "Model",
+  "brandRequired": "Please enter the brand",
+  "modelRequired": "Please enter the model",
+  "voiceInput": "Voice input",
+  "listening": "Listening...",
+  "transcribing": "Transcribing",
+  "portugueseBrazil": "Portuguese (BR)",
+  "englishUS": "English (US)",
+  "voiceNotAvailable": "Voice input not available",
+  "stopListening": "Stop",
+  "selectEquipmentChecklist": "Select equipment and checklist",
+  "orderCreatedSuccess": "Order created successfully",
+  "userNotAuthenticated": "User not authenticated",
+  "errorLoadingData": "Error loading data: {error}",
+  "@errorLoadingData": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "errorCreatingOrder": "Error creating order: {error}",
+  "@errorCreatingOrder": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "serverRejectedTechnician": "The server did not accept the selected technician",
+  "scheduledDate": "Scheduled date",
+  "selectDate": "Select date",
+  "saving": "Saving...",
+  "createOrder": "Create Order",
+  "responsibleTechnician": "Responsible technician",
+  "priorityLabel": "Priority",
+  "priorityHigh": "High",
+  "priorityMedium": "Medium",
+  "priorityLow": "Low",
+  "doNotAssignNow": "Do not assign now",
+  "meLabel": "Me",
+  "meWithName": "Me ({name})",
+  "@meWithName": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "meUnavailable": "Me (unavailable)"
+  ,
+  "recentOrdersError": "Error loading recent orders",
+  "noRecentOrders": "No recent orders",
+  "createServiceOrderTitle": "Create Service Order"
+  ,
+  "ordersLoadError": "Error loading orders",
+  "noOrdersFound": "No orders found"
 }

@@ -5,6 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "signatures")
 @Data
 public class Assinatura {
     @Id
@@ -12,14 +13,18 @@ public class Assinatura {
     private Long id;
 
     @OneToOne
-    @JoinColumn(name = "ordem_servico_id")
-    private OrdemServico ordemServico;
+    @JoinColumn(name = "checklist_execution_id")
+    private ChecklistExecution checklistExecution;
 
     @ManyToOne
+    @JoinColumn(name = "signer_id")
     private User tecnico;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "signature_data", columnDefinition = "TEXT")
     private String assinaturaBase64;
 
+    private String signatureHash;
+
+    @Column(name = "signed_at")
     private LocalDateTime dataAssinatura = LocalDateTime.now();
 }

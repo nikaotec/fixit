@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../models/execution_models.dart';
@@ -9,12 +10,16 @@ class ExecutionService {
   static Future<ExecutionStartResponse> startExecution({
     required String token,
     required int maintenanceOrderId,
-    required String qrCodePayload,
+    String? qrCodePayload,
     required String deviceId,
     required double latitude,
     required double longitude,
     double? accuracy,
   }) async {
+    if (kDebugMode) {
+      final preview = token.length > 10 ? token.substring(0, 10) : token;
+      debugPrint('ExecutionService.startExecution token: $preview...');
+    }
     final response = await http.post(
       Uri.parse('${ApiService.baseUrl}/executions/start'),
       headers: {
@@ -23,7 +28,8 @@ class ExecutionService {
       },
       body: jsonEncode({
         'maintenanceOrderId': maintenanceOrderId,
-        'qrCodePayload': qrCodePayload,
+        if (qrCodePayload != null && qrCodePayload.isNotEmpty)
+          'qrCodePayload': qrCodePayload,
         'deviceId': deviceId,
         'latitude': latitude,
         'longitude': longitude,
@@ -34,7 +40,51 @@ class ExecutionService {
     if (response.statusCode == 200) {
       return ExecutionStartResponse.fromJson(jsonDecode(response.body));
     }
-    throw Exception('Failed to start execution: ${response.statusCode}');
+    String message = 'Failed to start execution: ${response.statusCode}';
+    try {
+      final data = jsonDecode(response.body);
+      if (data is Map) {
+        if (data['message'] != null) {
+          message = data['message'].toString();
+        } else if (data.isNotEmpty) {
+          final parts = <String>[];
+          data.forEach((key, value) {
+            parts.add('$key: $value');
+          });
+          message = parts.join(' • ');
+        }
+      }
+    } catch (_) {}
+    throw Exception(message);
+  }
+
+  static Future<ExecutionLookupResponse> lookupExecution({
+    required String token,
+    String? equipmentCode,
+    String? qrCodePayload,
+  }) async {
+    if (kDebugMode) {
+      final preview = token.length > 10 ? token.substring(0, 10) : token;
+      debugPrint('ExecutionService.lookupExecution token: $preview...');
+    }
+    final response = await http.post(
+      Uri.parse('${ApiService.baseUrl}/executions/lookup'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        if (equipmentCode != null && equipmentCode.isNotEmpty)
+          'equipmentCode': equipmentCode,
+        if (qrCodePayload != null && qrCodePayload.isNotEmpty)
+          'qrCodePayload': qrCodePayload,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return ExecutionLookupResponse.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to lookup execution: ${response.statusCode}');
   }
 
   static Future<ExecutionItemResponse> recordItem({
@@ -92,10 +142,38 @@ class ExecutionService {
     throw Exception('Failed to upload evidence: ${response.statusCode}');
   }
 
+  static Future<void> uploadExecutionPhoto({
+    required String token,
+    required int executionId,
+    required Uint8List fileBytes,
+    required String fileName,
+    required String mimeType,
+  }) async {
+    final uri = Uri.parse('${ApiService.baseUrl}/executions/$executionId/photos/upload');
+    final request = http.MultipartRequest('POST', uri);
+    request.headers['Authorization'] = 'Bearer $token';
+
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        fileBytes,
+        filename: fileName,
+        contentType: MediaType.parse(mimeType),
+      ),
+    );
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to upload execution photo: ${response.statusCode}');
+    }
+  }
+
   static Future<void> finalizeExecution({
     required String token,
     required int executionId,
     required String signatureBase64,
+    String? finalObservation,
   }) async {
     final response = await http.post(
       Uri.parse('${ApiService.baseUrl}/executions/$executionId/finalize'),
@@ -103,11 +181,22 @@ class ExecutionService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({'signatureBase64': signatureBase64}),
+      body: jsonEncode({
+        'signatureBase64': signatureBase64,
+        if (finalObservation != null && finalObservation.isNotEmpty)
+          'finalObservation': finalObservation,
+      }),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to finalize execution: ${response.statusCode}');
+      String message = 'Failed to finalize execution: ${response.statusCode}';
+      try {
+        final data = jsonDecode(response.body);
+        if (data is Map && data['message'] != null) {
+          message = data['message'].toString();
+        }
+      } catch (_) {}
+      throw Exception(message);
     }
   }
 

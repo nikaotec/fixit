@@ -18,11 +18,30 @@
     },
     {
       "parameters": {
-        "functionCode": "return items;"
+        "url": "https://fcm.googleapis.com/fcm/send",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": [
+          {
+            "name": "Authorization",
+            "value": "={{'key=' + $env.FCM_SERVER_KEY}}"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "sendBody": true,
+        "bodyParametersJson": "{\"to\":\"={{$json[\\\"body\\\"][\\\"creatorFcmToken\\\"]}}\",\"notification\":{\"title\":\"Ordem finalizada\",\"body\":\"Ordem #{{$json[\\\"body\\\"][\\\"orderId\\\"]}} foi finalizada\"},\"data\":{\"orderId\":\"={{$json[\\\"body\\\"][\\\"orderId\\\"]}}\",\"status\":\"={{$json[\\\"body\\\"][\\\"status\\\"]}}\",\"executionId\":\"={{$json[\\\"body\\\"][\\\"executionId\\\"]}}\",\"reportUrl\":\"={{$json[\\\"body\\\"][\\\"reportUrl\\\"]}}\"}}",
+        "options": {
+          "response": {
+            "responseFormat": "json"
+          }
+        }
       },
-      "name": "Mock Push Notification",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
+      "name": "Send Push Notification (FCM)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
       "position": [
         300,
         300
@@ -62,7 +81,7 @@
       "main": [
         [
           {
-            "node": "Mock Push Notification",
+            "node": "Send Push Notification (FCM)",
             "type": "main",
             "index": 0
           }
@@ -74,6 +93,11 @@
         [
           {
             "node": "Generate PDF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Push Notification (FCM)",
             "type": "main",
             "index": 0
           }

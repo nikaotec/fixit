@@ -4,9 +4,12 @@ import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../providers/user_provider.dart';
 import '../services/checklist_service.dart';
+import '../models/order.dart';
 
 class CreateChecklistTemplateScreen extends StatefulWidget {
-  const CreateChecklistTemplateScreen({super.key});
+  final Checklist? checklist;
+
+  const CreateChecklistTemplateScreen({super.key, this.checklist});
 
   @override
   State<CreateChecklistTemplateScreen> createState() =>
@@ -19,11 +22,10 @@ class _CreateChecklistTemplateScreenState
   final _titleController = TextEditingController();
   final _categoryController = TextEditingController();
   bool _isSaving = false;
-  final List<TextEditingController> _itemControllers = [
-    TextEditingController(),
-    TextEditingController(),
-    TextEditingController(),
-  ];
+  final List<TextEditingController> _itemControllers = [];
+  final List<bool> _itemRequiredPhoto = [];
+  final List<bool> _itemCritical = [];
+  bool _initialized = false;
 
   @override
   void dispose() {
@@ -38,12 +40,16 @@ class _CreateChecklistTemplateScreenState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (!_initialized) {
+      _initialized = true;
+      _seedFromChecklist();
+    }
 
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('New Checklist'),
+        title: Text(widget.checklist == null ? 'New Checklist' : 'Edit Checklist'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -71,7 +77,9 @@ class _CreateChecklistTemplateScreenState
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Create Checklist Template',
+                  widget.checklist == null
+                      ? 'Create Checklist Template'
+                      : 'Edit Checklist Template',
                   style: AppTypography.headline3.copyWith(
                     color: isDark ? Colors.white : AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -143,11 +151,24 @@ class _CreateChecklistTemplateScreenState
       fields.add(
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: TextFormField(
-            controller: _itemControllers[i],
-            decoration: InputDecoration(
-              labelText: 'Item ${i + 1}',
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _itemControllers[i],
+                  decoration: InputDecoration(
+                    labelText: 'Item ${i + 1}',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => _removeItem(i),
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Excluir item',
+                color: AppColors.danger,
+              ),
+            ],
           ),
         ),
       );
@@ -158,7 +179,49 @@ class _CreateChecklistTemplateScreenState
   void _addItem() {
     setState(() {
       _itemControllers.add(TextEditingController());
+      _itemRequiredPhoto.add(false);
+      _itemCritical.add(false);
     });
+  }
+
+  void _removeItem(int index) {
+    setState(() {
+      _itemControllers[index].dispose();
+      _itemControllers.removeAt(index);
+      if (_itemRequiredPhoto.length > index) {
+        _itemRequiredPhoto.removeAt(index);
+      }
+      if (_itemCritical.length > index) {
+        _itemCritical.removeAt(index);
+      }
+    });
+  }
+
+  void _seedFromChecklist() {
+    if (widget.checklist == null) {
+      _itemControllers.addAll([
+        TextEditingController(),
+        TextEditingController(),
+        TextEditingController(),
+      ]);
+      _itemRequiredPhoto.addAll([false, false, false]);
+      _itemCritical.addAll([false, false, false]);
+      return;
+    }
+
+    _titleController.text = widget.checklist!.nome;
+    _categoryController.text = widget.checklist!.descricao ?? '';
+
+    for (final item in widget.checklist!.itens) {
+      _itemControllers.add(TextEditingController(text: item.descricao));
+      _itemRequiredPhoto.add(item.obrigatorioFoto);
+      _itemCritical.add(item.critico);
+    }
+    if (_itemControllers.isEmpty) {
+      _itemControllers.add(TextEditingController());
+      _itemRequiredPhoto.add(false);
+      _itemCritical.add(false);
+    }
   }
 
   void _saveTemplate() {
@@ -185,20 +248,34 @@ class _CreateChecklistTemplateScreenState
         payload.add({
           'descricao': items[i],
           'ordem': i + 1,
-          'obrigatorioFoto': false,
-          'critico': false,
+          'obrigatorioFoto': _itemRequiredPhoto.length > i
+              ? _itemRequiredPhoto[i]
+              : false,
+          'critico': _itemCritical.length > i ? _itemCritical[i] : false,
         });
       }
-      await ChecklistService.create(
-        token: token,
-        nome: _titleController.text.trim(),
-        descricao: _categoryController.text.trim(),
-        itens: payload,
-      );
+      if (widget.checklist == null) {
+        await ChecklistService.create(
+          token: token,
+          nome: _titleController.text.trim(),
+          descricao: _categoryController.text.trim(),
+          itens: payload,
+        );
+      } else {
+        await ChecklistService.update(
+          token: token,
+          id: widget.checklist!.id,
+          nome: _titleController.text.trim(),
+          descricao: _categoryController.text.trim(),
+          itens: payload,
+        );
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Checklist template saved'),
+        SnackBar(
+          content: Text(widget.checklist == null
+              ? 'Checklist template saved'
+              : 'Checklist template updated'),
           backgroundColor: AppColors.success,
         ),
       );

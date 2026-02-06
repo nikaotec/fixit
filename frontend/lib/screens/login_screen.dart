@@ -199,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   SizedBox(height: isSmallScreen ? 32 : 40),
 
                                   // Sign up link
-                                  _buildSignUpLink(isDark),
+                                  _buildSignUpLink(isDark, l10n),
                                 ],
                               ),
                             ),
@@ -332,7 +332,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                'Forgot Password?',
+                l10n.forgotPassword,
                 style: AppTypography.captionSmall.copyWith(
                   color: isDark
                       ? AppColors.primaryDarkTheme
@@ -374,7 +374,7 @@ class _LoginScreenState extends State<LoginScreen> {
               return 'Please enter your password';
             }
             if (value.length < 6) {
-              return 'Password must be at least 6 characters';
+              return l10n.passwordMin6;
             }
             return null;
           },
@@ -517,12 +517,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSignUpLink(bool isDark) {
+  Widget _buildSignUpLink(bool isDark, AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Don't have an account? ",
+          l10n.noAccountQuestion,
           style: AppTypography.bodyText.copyWith(
             color: isDark
                 ? AppColors.textSecondaryDark
@@ -543,7 +543,7 @@ class _LoginScreenState extends State<LoginScreen> {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: Text(
-            'Create Account',
+            l10n.createAccount,
             style: AppTypography.bodyText.copyWith(
               color: isDark ? AppColors.primaryDarkTheme : AppColors.primary,
               fontWeight: AppTypography.bold,
@@ -567,6 +567,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _showLanguageSelector(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -579,7 +580,7 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.language),
-                title: const Text('Português'),
+                title: Text(l10n.portugueseLabel),
                 onTap: () {
                   userProvider.setLocale(const Locale('pt'));
                   Navigator.pop(context);
@@ -587,7 +588,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.language),
-                title: const Text('English'),
+                title: Text(l10n.englishLabel),
                 onTap: () {
                   userProvider.setLocale(const Locale('en'));
                   Navigator.pop(context);
@@ -601,18 +602,16 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showForgotPassword(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Forgot Password'),
-        content: const Text(
-          'Password reset is managed by your administrator for now. '
-          'Contact your manager to reset your credentials.',
-        ),
+        title: Text(l10n.forgotPasswordTitle),
+        content: Text(l10n.forgotPasswordBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: Text(l10n.ok),
           ),
         ],
       ),

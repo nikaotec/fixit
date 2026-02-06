@@ -49,5 +49,9 @@
 	<string>Precisamos da câmera para capturar evidências e ler QR Codes.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Precisamos da localização para validar a execução por geofence.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Precisamos do microfone para transcrever sua fala.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Precisamos do reconhecimento de voz para preencher os campos por fala.</string>
 </dict>
 </plist>
