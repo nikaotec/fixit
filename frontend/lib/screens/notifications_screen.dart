@@ -9,6 +9,7 @@ import '../theme/app_typography.dart';
 import '../providers/user_provider.dart';
 import '../services/notification_service.dart';
 import '../services/api_service.dart';
+import '../services/order_event_utils.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -57,7 +58,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _ordersSub = _ordersChannel!.stream.listen((event) {
       try {
         final data = jsonDecode(event);
-        if (data is Map && data['type'] == 'order_updated') {
+        if (data is Map && OrderEventUtils.isOrderEvent(data)) {
           _loadNotifications();
         }
       } catch (_) {

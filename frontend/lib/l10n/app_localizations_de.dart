@@ -698,4 +698,107 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noOrdersFound => 'Keine Aufträge gefunden';
+
+  @override
+  String get maintenanceExecutionTitle => 'Wartungsausführung';
+
+  @override
+  String get maintenanceExecutionStartTitle => 'Wartung starten';
+
+  @override
+  String get maintenanceExecutionEntrySubtitle =>
+      'Geben Sie den Gerätecode ein oder scannen Sie den QR-Code.';
+
+  @override
+  String get equipmentCodeLabel => 'Gerätecode';
+
+  @override
+  String get equipmentCodeHint => 'z. B. GER-001 oder SO-123';
+
+  @override
+  String get lookupOrderButton => 'Auftrag suchen';
+
+  @override
+  String get orDivider => 'oder';
+
+  @override
+  String get scanQrCodeButton => 'QR-Code scannen';
+
+  @override
+  String get alignQrInstruction => 'Richten Sie den QR-Code im Rahmen aus';
+
+  @override
+  String get typeCodeButton => 'Code eingeben';
+
+  @override
+  String get orderFoundTitle => 'Auftrag gefunden';
+
+  @override
+  String get orderNotFoundTitle => 'Auftrag nicht gefunden';
+
+  @override
+  String get tryAnotherCode => 'Versuchen Sie einen anderen Code.';
+
+  @override
+  String get tryAgainButton => 'Erneut versuchen';
+
+  @override
+  String get equipmentCodeRequiredError => 'Bitte Gerätecode eingeben';
+
+  @override
+  String get userNotAuthenticatedError => 'Benutzer nicht authentifiziert';
+
+  @override
+  String get orderNotFoundError => 'Auftrag konnte nicht gefunden werden';
+
+  @override
+  String get qrNotRecognizedError => 'QR-Code nicht erkannt';
+
+  @override
+  String get orderCodeDetectedError =>
+      'Auftragsnummer erkannt. Verwenden Sie den Gerätecode oder scannen Sie den QR-Code.';
+
+  @override
+  String orderNumberLabel(Object id) {
+    return 'Auftrag Nr. $id';
+  }
+
+  @override
+  String clientLabel(Object name) {
+    return 'Kunde: $name';
+  }
+
+  @override
+  String scheduledForLabel(Object date) {
+    return 'Geplant: $date';
+  }
+
+  @override
+  String get goToChecklistButton => 'Zur Checkliste';
+
+  @override
+  String get searchAnotherEquipmentButton => 'Anderes Gerät suchen';
+
+  @override
+  String get statusUnavailable => 'Status nicht verfügbar';
+
+  @override
+  String get scheduledNotDefined => 'Nicht festgelegt';
+
+  @override
+  String get chooseEquipmentIdentification =>
+      'Wählen Sie, wie Sie das Gerät identifizieren';
+
+  @override
+  String get continueButton => 'Weiter';
+
+  @override
+  String equipmentCodeValue(Object code) {
+    return 'Gerätecode: $code';
+  }
+
+  @override
+  String qrCodeValue(Object code) {
+    return 'QR-Code: $code';
+  }
 }

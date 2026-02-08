@@ -265,12 +265,65 @@
       "name": {}
     }
   },
-  "meUnavailable": "Me (unavailable)"
-  ,
+  "meUnavailable": "Me (unavailable)",
   "recentOrdersError": "Error loading recent orders",
   "noRecentOrders": "No recent orders",
-  "createServiceOrderTitle": "Create Service Order"
-  ,
+  "createServiceOrderTitle": "Create Service Order",
   "ordersLoadError": "Error loading orders",
-  "noOrdersFound": "No orders found"
+  "noOrdersFound": "No orders found",
+  "maintenanceExecutionTitle": "Maintenance Execution",
+  "maintenanceExecutionStartTitle": "Start maintenance",
+  "maintenanceExecutionEntrySubtitle": "Enter the equipment code or scan the QR code.",
+  "equipmentCodeLabel": "Equipment code",
+  "equipmentCodeHint": "e.g. GER-001 or SO-123",
+  "lookupOrderButton": "Find order",
+  "orDivider": "or",
+  "scanQrCodeButton": "Scan QR code",
+  "alignQrInstruction": "Align the QR code inside the frame",
+  "typeCodeButton": "Type code",
+  "orderFoundTitle": "Order found",
+  "orderNotFoundTitle": "Order not found",
+  "tryAnotherCode": "Try another code.",
+  "tryAgainButton": "Try again",
+  "equipmentCodeRequiredError": "Enter the equipment code",
+  "userNotAuthenticatedError": "User not authenticated",
+  "orderNotFoundError": "Unable to find the order",
+  "qrNotRecognizedError": "QR code not recognized",
+  "orderCodeDetectedError": "Order code detected. Use the equipment code or scan the QR code.",
+  "orderNumberLabel": "Order #{id}",
+  "clientLabel": "Client: {name}",
+  "scheduledForLabel": "Scheduled: {date}",
+  "goToChecklistButton": "Go to checklist",
+  "searchAnotherEquipmentButton": "Search another equipment",
+  "statusUnavailable": "Status unavailable",
+  "scheduledNotDefined": "Not set",
+  "@orderNumberLabel": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "@clientLabel": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@scheduledForLabel": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "chooseEquipmentIdentification": "Choose how to identify the equipment",
+  "continueButton": "Continue",
+  "equipmentCodeValue": "Equipment code: {code}",
+  "@equipmentCodeValue": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "qrCodeValue": "QR code: {code}",
+  "@qrCodeValue": {
+    "placeholders": {
+      "code": {}
+    }
+  }
 }

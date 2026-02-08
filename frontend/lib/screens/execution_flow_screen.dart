@@ -21,6 +21,7 @@ import '../services/device_service.dart';
 import '../services/execution_service.dart';
 import '../services/speech_service.dart';
 import '../services/voice_preferences.dart';
+import '../services/order_event_utils.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import 'execution_review_screen.dart';
@@ -220,15 +221,14 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
       try {
         final data = jsonDecode(event);
         if (data is Map &&
-            data['type'] == 'order_updated' &&
             _execution != null &&
-            data['orderId']?.toString() ==
-                _execution!.maintenanceOrderId.toString()) {
-          final status = data['status']?.toString();
-          if (status == 'FINALIZADA') {
-            if (mounted) {
-              setState(() => _isFinalized = true);
-            }
+            OrderEventUtils.isOrderEvent(
+              data,
+              orderId: _execution!.maintenanceOrderId,
+            )) {
+          final status = OrderEventUtils.extractOrderStatus(data);
+          if (status == 'FINALIZADA' && mounted) {
+            setState(() => _isFinalized = true);
           }
         }
       } catch (_) {}

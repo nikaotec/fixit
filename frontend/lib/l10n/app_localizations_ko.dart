@@ -690,4 +690,105 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get noOrdersFound => '작업 지시를 찾을 수 없음';
+
+  @override
+  String get maintenanceExecutionTitle => '정비 실행';
+
+  @override
+  String get maintenanceExecutionStartTitle => '정비 시작';
+
+  @override
+  String get maintenanceExecutionEntrySubtitle => '장비 코드를 입력하거나 QR 코드를 스캔하세요.';
+
+  @override
+  String get equipmentCodeLabel => '장비 코드';
+
+  @override
+  String get equipmentCodeHint => '예: GER-001 또는 SO-123';
+
+  @override
+  String get lookupOrderButton => '작업 지시 찾기';
+
+  @override
+  String get orDivider => '또는';
+
+  @override
+  String get scanQrCodeButton => 'QR 코드 스캔';
+
+  @override
+  String get alignQrInstruction => '프레임 안에 QR 코드를 맞추세요';
+
+  @override
+  String get typeCodeButton => '코드 입력';
+
+  @override
+  String get orderFoundTitle => '작업 지시를 찾았습니다';
+
+  @override
+  String get orderNotFoundTitle => '작업 지시를 찾을 수 없습니다';
+
+  @override
+  String get tryAnotherCode => '다른 코드를 시도하세요.';
+
+  @override
+  String get tryAgainButton => '다시 시도';
+
+  @override
+  String get equipmentCodeRequiredError => '장비 코드를 입력하세요';
+
+  @override
+  String get userNotAuthenticatedError => '사용자가 인증되지 않았습니다';
+
+  @override
+  String get orderNotFoundError => '작업 지시를 찾을 수 없습니다';
+
+  @override
+  String get qrNotRecognizedError => 'QR 코드를 인식할 수 없습니다';
+
+  @override
+  String get orderCodeDetectedError =>
+      '작업 지시 번호가 감지되었습니다. 장비 코드를 사용하거나 QR 코드를 스캔하세요.';
+
+  @override
+  String orderNumberLabel(Object id) {
+    return '작업 지시 #$id';
+  }
+
+  @override
+  String clientLabel(Object name) {
+    return '고객: $name';
+  }
+
+  @override
+  String scheduledForLabel(Object date) {
+    return '예정: $date';
+  }
+
+  @override
+  String get goToChecklistButton => '체크리스트로 이동';
+
+  @override
+  String get searchAnotherEquipmentButton => '다른 장비 검색';
+
+  @override
+  String get statusUnavailable => '상태를 사용할 수 없습니다';
+
+  @override
+  String get scheduledNotDefined => '미정';
+
+  @override
+  String get chooseEquipmentIdentification => '장비를 식별하는 방법을 선택하세요';
+
+  @override
+  String get continueButton => '계속';
+
+  @override
+  String equipmentCodeValue(Object code) {
+    return '장비 코드: $code';
+  }
+
+  @override
+  String qrCodeValue(Object code) {
+    return 'QR 코드: $code';
+  }
 }

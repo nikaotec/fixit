@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../models/execution_models.dart';
 import '../providers/user_provider.dart';
 import '../services/execution_service.dart';
+import '../services/order_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../l10n/app_localizations.dart';
 import 'execution_flow_screen.dart';
 
 class MaintenanceExecutionEntryScreen extends StatefulWidget {
@@ -54,40 +56,41 @@ class _MaintenanceExecutionEntryScreenState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight,
-      appBar: AppBar(title: const Text('Maintenance Execution')),
+      appBar: AppBar(title: Text(l10n.maintenanceExecutionTitle)),
       body: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
-          child: _buildStep(context, isDark),
+          child: _buildStep(context, isDark, l10n),
         ),
       ),
     );
   }
 
-  Widget _buildStep(BuildContext context, bool isDark) {
+  Widget _buildStep(BuildContext context, bool isDark, AppLocalizations l10n) {
     switch (_step) {
       case 0:
-        return _entryStep(isDark);
+        return _entryStep(isDark, l10n);
       case 1:
-        return _scanStep(isDark);
+        return _scanStep(isDark, l10n);
       case 2:
-        return _successStep(isDark);
+        return _successStep(isDark, l10n);
       default:
-        return _errorStep(isDark);
+        return _errorStep(isDark, l10n);
     }
   }
 
-  Widget _entryStep(bool isDark) {
+  Widget _entryStep(bool isDark, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Iniciar manutenção',
+            l10n.maintenanceExecutionStartTitle,
             style: AppTypography.headline3.copyWith(
               color: isDark ? Colors.white : AppColors.textPrimary,
               fontWeight: FontWeight.w600,
@@ -95,7 +98,7 @@ class _MaintenanceExecutionEntryScreenState
           ),
           const SizedBox(height: 8),
           Text(
-            'Digite o código do equipamento ou escaneie o QR code.',
+            l10n.maintenanceExecutionEntrySubtitle,
             style: AppTypography.bodyText.copyWith(
               color: isDark ? AppColors.slate300 : AppColors.slate600,
             ),
@@ -103,9 +106,9 @@ class _MaintenanceExecutionEntryScreenState
           const SizedBox(height: 16),
           TextField(
             controller: _codeController,
-            decoration: const InputDecoration(
-              labelText: 'Código do equipamento',
-              hintText: 'Ex: GER-001',
+            decoration: InputDecoration(
+              labelText: l10n.equipmentCodeLabel,
+              hintText: l10n.equipmentCodeHint,
             ),
           ),
           const SizedBox(height: 12),
@@ -117,7 +120,7 @@ class _MaintenanceExecutionEntryScreenState
                     height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Buscar ordem'),
+                : Text(l10n.lookupOrderButton),
           ),
           const SizedBox(height: 16),
           Row(
@@ -125,7 +128,7 @@ class _MaintenanceExecutionEntryScreenState
               Expanded(child: Divider(color: AppColors.slate300.withOpacity(0.4))),
               const SizedBox(width: 12),
               Text(
-                'ou',
+                l10n.orDivider,
                 style: AppTypography.caption.copyWith(
                   color: isDark ? AppColors.slate400 : AppColors.slate500,
                 ),
@@ -138,7 +141,7 @@ class _MaintenanceExecutionEntryScreenState
           OutlinedButton.icon(
             onPressed: _isLoading ? null : () => setState(() => _step = 1),
             icon: const Icon(Icons.qr_code_scanner),
-            label: const Text('Escanear QR code'),
+            label: Text(l10n.scanQrCodeButton),
           ),
           if (_error != null) ...[
             const SizedBox(height: 16),
@@ -152,7 +155,7 @@ class _MaintenanceExecutionEntryScreenState
     );
   }
 
-  Widget _scanStep(bool isDark) {
+  Widget _scanStep(bool isDark, AppLocalizations l10n) {
     return Column(
       children: [
         Expanded(
@@ -190,7 +193,7 @@ class _MaintenanceExecutionEntryScreenState
           child: Column(
             children: [
               Text(
-                'Alinhe o QR code dentro da moldura',
+                l10n.alignQrInstruction,
                 style: AppTypography.bodyTextSmall.copyWith(
                   color: isDark ? AppColors.slate300 : AppColors.slate600,
                 ),
@@ -198,7 +201,7 @@ class _MaintenanceExecutionEntryScreenState
               const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: () => setState(() => _step = 0),
-                child: const Text('Digitar código'),
+                child: Text(l10n.typeCodeButton),
               ),
             ],
           ),
@@ -207,13 +210,13 @@ class _MaintenanceExecutionEntryScreenState
     );
   }
 
-  Widget _successStep(bool isDark) {
-    final equipmentName = _lookup?.equipmentName ?? 'Equipamento';
+  Widget _successStep(bool isDark, AppLocalizations l10n) {
+    final equipmentName = _lookup?.equipmentName ?? l10n.equipmentLabel;
     final equipmentCode = _lookup?.equipmentCode ?? '-';
     final orderId = _lookup?.maintenanceOrderId;
-    final orderStatus = _formatStatus(_lookup?.maintenanceOrderStatus);
+    final orderStatus = _formatStatus(_lookup?.maintenanceOrderStatus, l10n);
     final clientName = _lookup?.clientName ?? '-';
-    final scheduledFor = _formatScheduledFor(_lookup?.scheduledFor);
+    final scheduledFor = _formatScheduledFor(_lookup?.scheduledFor, l10n);
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
       child: Column(
@@ -234,7 +237,7 @@ class _MaintenanceExecutionEntryScreenState
           ),
           const SizedBox(height: 16),
           Text(
-            'Ordem encontrada',
+            l10n.orderFoundTitle,
             style: AppTypography.headline3.copyWith(
               color: isDark ? Colors.white : AppColors.textPrimary,
               fontWeight: FontWeight.w600,
@@ -257,7 +260,7 @@ class _MaintenanceExecutionEntryScreenState
             child: Column(
               children: [
                 Text(
-                  'Ordem #${orderId ?? '-'}',
+                  l10n.orderNumberLabel(orderId?.toString() ?? '-'),
                   style: AppTypography.bodyText.copyWith(
                     color: isDark ? Colors.white : AppColors.textPrimary,
                     fontWeight: FontWeight.w600,
@@ -272,14 +275,14 @@ class _MaintenanceExecutionEntryScreenState
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Cliente: $clientName',
+                  l10n.clientLabel(clientName),
                   style: AppTypography.caption.copyWith(
                     color: isDark ? AppColors.slate300 : AppColors.slate600,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Prevista: $scheduledFor',
+                  l10n.scheduledForLabel(scheduledFor),
                   style: AppTypography.caption.copyWith(
                     color: isDark ? AppColors.slate300 : AppColors.slate600,
                   ),
@@ -290,7 +293,7 @@ class _MaintenanceExecutionEntryScreenState
           const Spacer(),
           ElevatedButton(
             onPressed: _startExecutionFlow,
-            child: const Text('Ir para checklist'),
+            child: Text(l10n.goToChecklistButton),
           ),
           const SizedBox(height: 12),
           OutlinedButton(
@@ -298,14 +301,14 @@ class _MaintenanceExecutionEntryScreenState
               _lookup = null;
               _step = 0;
             }),
-            child: const Text('Buscar outro equipamento'),
+            child: Text(l10n.searchAnotherEquipmentButton),
           ),
         ],
       ),
     );
   }
 
-  Widget _errorStep(bool isDark) {
+  Widget _errorStep(bool isDark, AppLocalizations l10n) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
       child: Column(
@@ -326,7 +329,7 @@ class _MaintenanceExecutionEntryScreenState
           ),
           const SizedBox(height: 16),
           Text(
-            'Não encontramos uma ordem',
+            l10n.orderNotFoundTitle,
             style: AppTypography.headline3.copyWith(
               color: isDark ? Colors.white : AppColors.textPrimary,
               fontWeight: FontWeight.w600,
@@ -334,7 +337,7 @@ class _MaintenanceExecutionEntryScreenState
           ),
           const SizedBox(height: 8),
           Text(
-            _error ?? 'Tente novamente com outro código.',
+            _error ?? l10n.tryAnotherCode,
             textAlign: TextAlign.center,
             style: AppTypography.bodyText.copyWith(
               color: isDark ? AppColors.slate300 : AppColors.slate600,
@@ -343,7 +346,7 @@ class _MaintenanceExecutionEntryScreenState
           const Spacer(),
           ElevatedButton(
             onPressed: () => setState(() => _step = 0),
-            child: const Text('Tentar novamente'),
+            child: Text(l10n.tryAgainButton),
           ),
         ],
       ),
@@ -351,9 +354,10 @@ class _MaintenanceExecutionEntryScreenState
   }
 
   Future<void> _lookupByCode() async {
+    final l10n = AppLocalizations.of(context)!;
     final code = _codeController.text.trim();
     if (code.isEmpty) {
-      setState(() => _error = 'Informe o código do equipamento');
+      setState(() => _error = l10n.equipmentCodeRequiredError);
       return;
     }
     setState(() {
@@ -362,10 +366,21 @@ class _MaintenanceExecutionEntryScreenState
     });
     try {
       final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) throw Exception('Usuário não autenticado');
+      if (token == null) {
+        setState(() {
+          _error = l10n.userNotAuthenticatedError;
+          _step = 3;
+        });
+        return;
+      }
+      final orderId = _parseOrderId(code);
+      if (orderId != null) {
+        final resolved = await _lookupByOrderId(token, orderId);
+        if (resolved) return;
+      }
       final response = await ExecutionService.lookupExecution(
         token: token,
-        equipmentCode: code,
+        equipmentCode: code.toUpperCase(),
       );
       if (!mounted) return;
       setState(() {
@@ -375,7 +390,7 @@ class _MaintenanceExecutionEntryScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Não foi possível localizar a ordem';
+        _error = l10n.orderNotFoundError;
         _step = 3;
       });
     } finally {
@@ -384,13 +399,14 @@ class _MaintenanceExecutionEntryScreenState
   }
 
   Future<void> _lookupByQr(String payload) async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
       _error = null;
     });
     try {
       final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) throw Exception('Usuário não autenticado');
+      if (token == null) throw Exception(l10n.userNotAuthenticatedError);
       final response = await ExecutionService.lookupExecution(
         token: token,
         qrCodePayload: payload,
@@ -403,12 +419,56 @@ class _MaintenanceExecutionEntryScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'QR code não reconhecido';
+        _error = l10n.qrNotRecognizedError;
         _step = 3;
       });
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  int? _parseOrderId(String input) {
+    final normalized = input.trim().toUpperCase();
+    if (normalized.startsWith('SO-')) {
+      return int.tryParse(normalized.substring(3));
+    }
+    if (RegExp(r'^\d+$').hasMatch(normalized)) {
+      return int.tryParse(normalized);
+    }
+    return null;
+  }
+
+  Future<bool> _lookupByOrderId(String token, int orderId) async {
+    try {
+      final order = await OrderService.getById(token: token, id: orderId);
+      final qrPayload = order.equipamento.qrCode.trim();
+      if (qrPayload.isNotEmpty) {
+        final response = await ExecutionService.lookupExecution(
+          token: token,
+          qrCodePayload: qrPayload,
+        );
+        if (!mounted) return false;
+        setState(() {
+          _lookup = response;
+          _step = 2;
+        });
+        return true;
+      }
+      final equipmentCode = order.equipamento.codigo.trim();
+      if (equipmentCode.isNotEmpty) {
+        final response = await ExecutionService.lookupExecution(
+          token: token,
+          equipmentCode: equipmentCode,
+        );
+        if (!mounted) return false;
+        setState(() {
+          _lookup = response;
+          _step = 2;
+        });
+        return true;
+      }
+    } catch (_) {}
+    return false;
   }
 
   void _startExecutionFlow() {
@@ -427,25 +487,25 @@ class _MaintenanceExecutionEntryScreenState
     );
   }
 
-  String _formatStatus(String? raw) {
+  String _formatStatus(String? raw, AppLocalizations l10n) {
     switch (raw) {
       case 'EM_ANDAMENTO':
-        return 'Em andamento';
+        return l10n.statusInProgress;
       case 'FINALIZADA':
-        return 'Finalizada';
+        return l10n.statusFinished;
       case 'ATRASADA':
-        return 'Atrasada';
+        return l10n.statusOverdue;
       case 'CANCELADA':
-        return 'Cancelada';
+        return l10n.statusCancelled;
       case 'ABERTA':
-        return 'Aberta';
+        return l10n.statusOpen;
       default:
-        return 'Status indisponível';
+        return l10n.statusUnavailable;
     }
   }
 
-  String _formatScheduledFor(String? raw) {
-    if (raw == null || raw.isEmpty) return 'Não definida';
+  String _formatScheduledFor(String? raw, AppLocalizations l10n) {
+    if (raw == null || raw.isEmpty) return l10n.scheduledNotDefined;
     try {
       final date = DateTime.parse(raw);
       final day = date.day.toString().padLeft(2, '0');

@@ -16,6 +16,7 @@ import '../models/order.dart';
 import '../providers/user_provider.dart';
 import '../services/order_service.dart';
 import '../services/api_service.dart';
+import '../services/order_event_utils.dart';
 import 'maintenance_execution_entry_screen.dart';
 import 'execution_flow_screen.dart';
 
@@ -93,12 +94,24 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       try {
         final data = jsonDecode(event);
         if (data is Map &&
-            data['type'] == 'order_updated' &&
-            data['orderId']?.toString() == _order.id.toString()) {
-          _loadOrder();
+            OrderEventUtils.isOrderEvent(data, orderId: _order.id)) {
+          _handleOrderEvent(data);
         }
       } catch (_) {}
     });
+  }
+
+  Future<void> _handleOrderEvent(Map data) async {
+    final payload = OrderEventUtils.extractOrderPayload(data);
+    if (payload != null) {
+      if (!mounted) return;
+      setState(() {
+        _order = Order.fromJson(payload);
+        _coords = _orderCoords(_order) ?? _coords;
+      });
+      return;
+    }
+    await _loadOrder();
   }
 
   @override
@@ -185,12 +198,39 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  _order.equipamento.nome,
-                  style: AppTypography.headline3.copyWith(
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _order.equipamento.nome,
+                      style: AppTypography.headline3.copyWith(
+                        color: isDark ? Colors.white : AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (_order.equipamento.codigo.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.equipmentCodeValue(_order.equipamento.codigo),
+                        style: AppTypography.caption.copyWith(
+                          color:
+                              isDark ? AppColors.slate300 : AppColors.slate600,
+                        ),
+                      ),
+                    ],
+                    if (_order.equipamento.qrCode.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.qrCodeValue(_order.equipamento.qrCode),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.caption.copyWith(
+                          color:
+                              isDark ? AppColors.slate300 : AppColors.slate600,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
@@ -204,7 +244,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               const SizedBox(width: 8),
               _chip(typeLabel, isDark),
               const SizedBox(width: 8),
-              _chip('ID #${_order.id}', isDark),
+              _chip(l10n.orderNumberLabel(_order.id.toString()), isDark),
               if (roleLabel != null) ...[
                 const SizedBox(width: 8),
                 _roleChip(roleLabel, isDark),
@@ -578,6 +618,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     final text = isDark ? Colors.white : AppColors.textPrimary;
     final subtitle = isDark ? AppColors.slate300 : AppColors.slate600;
     final surface = isDark ? AppColors.surfaceDarkTheme : Colors.white;
+    final l10n = AppLocalizations.of(context)!;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -601,7 +642,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Iniciar manutenção',
+                l10n.maintenanceExecutionStartTitle,
                 style: AppTypography.subtitle1.copyWith(
                   color: text,
                   fontWeight: FontWeight.w600,
@@ -609,7 +650,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Escolha como identificar o equipamento',
+                l10n.chooseEquipmentIdentification,
                 style: AppTypography.bodyTextSmall.copyWith(color: subtitle),
                 textAlign: TextAlign.center,
               ),
@@ -625,7 +666,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   );
                 },
                 icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Ler QR Code'),
+                label: Text(l10n.scanQrCodeButton),
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
@@ -634,7 +675,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                   await _showManualCodeDialog();
                 },
                 icon: const Icon(Icons.keyboard),
-                label: const Text('Digitar código'),
+                label: Text(l10n.typeCodeButton),
               ),
             ],
           ),
@@ -645,29 +686,30 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   Future<void> _showManualCodeDialog() async {
     final controller = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
     final code = await showDialog<String?>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Código do equipamento'),
+          title: Text(l10n.equipmentCodeLabel),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              hintText: 'Digite o código',
+            decoration: InputDecoration(
+              hintText: l10n.equipmentCodeHint,
             ),
             textInputAction: TextInputAction.done,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () {
                 final value = controller.text.trim();
                 Navigator.pop(context, value.isEmpty ? null : value);
               },
-              child: const Text('Continuar'),
+              child: Text(l10n.continueButton),
             ),
           ],
         );

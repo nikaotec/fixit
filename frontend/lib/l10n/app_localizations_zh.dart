@@ -687,4 +687,104 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noOrdersFound => '未找到工单';
+
+  @override
+  String get maintenanceExecutionTitle => '维护执行';
+
+  @override
+  String get maintenanceExecutionStartTitle => '开始维护';
+
+  @override
+  String get maintenanceExecutionEntrySubtitle => '请输入设备代码或扫描二维码。';
+
+  @override
+  String get equipmentCodeLabel => '设备代码';
+
+  @override
+  String get equipmentCodeHint => '例如：GER-001 或 SO-123';
+
+  @override
+  String get lookupOrderButton => '查找工单';
+
+  @override
+  String get orDivider => '或';
+
+  @override
+  String get scanQrCodeButton => '扫描二维码';
+
+  @override
+  String get alignQrInstruction => '将二维码对准取景框';
+
+  @override
+  String get typeCodeButton => '输入代码';
+
+  @override
+  String get orderFoundTitle => '找到工单';
+
+  @override
+  String get orderNotFoundTitle => '未找到工单';
+
+  @override
+  String get tryAnotherCode => '请尝试其他代码。';
+
+  @override
+  String get tryAgainButton => '重试';
+
+  @override
+  String get equipmentCodeRequiredError => '请输入设备代码';
+
+  @override
+  String get userNotAuthenticatedError => '用户未认证';
+
+  @override
+  String get orderNotFoundError => '无法找到工单';
+
+  @override
+  String get qrNotRecognizedError => '二维码无法识别';
+
+  @override
+  String get orderCodeDetectedError => '检测到工单编号。请使用设备代码或扫描二维码。';
+
+  @override
+  String orderNumberLabel(Object id) {
+    return '工单 #$id';
+  }
+
+  @override
+  String clientLabel(Object name) {
+    return '客户：$name';
+  }
+
+  @override
+  String scheduledForLabel(Object date) {
+    return '预计：$date';
+  }
+
+  @override
+  String get goToChecklistButton => '进入检查清单';
+
+  @override
+  String get searchAnotherEquipmentButton => '查找其他设备';
+
+  @override
+  String get statusUnavailable => '状态不可用';
+
+  @override
+  String get scheduledNotDefined => '未设置';
+
+  @override
+  String get chooseEquipmentIdentification => '选择如何识别设备';
+
+  @override
+  String get continueButton => '继续';
+
+  @override
+  String equipmentCodeValue(Object code) {
+    return '设备代码：$code';
+  }
+
+  @override
+  String qrCodeValue(Object code) {
+    return '二维码：$code';
+  }
 }

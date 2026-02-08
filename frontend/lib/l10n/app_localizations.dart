@@ -1431,6 +1431,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No orders found'**
   String get noOrdersFound;
+
+  /// No description provided for @maintenanceExecutionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance Execution'**
+  String get maintenanceExecutionTitle;
+
+  /// No description provided for @maintenanceExecutionStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start maintenance'**
+  String get maintenanceExecutionStartTitle;
+
+  /// No description provided for @maintenanceExecutionEntrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the equipment code or scan the QR code.'**
+  String get maintenanceExecutionEntrySubtitle;
+
+  /// No description provided for @equipmentCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment code'**
+  String get equipmentCodeLabel;
+
+  /// No description provided for @equipmentCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. GER-001 or SO-123'**
+  String get equipmentCodeHint;
+
+  /// No description provided for @lookupOrderButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Find order'**
+  String get lookupOrderButton;
+
+  /// No description provided for @orDivider.
+  ///
+  /// In en, this message translates to:
+  /// **'or'**
+  String get orDivider;
+
+  /// No description provided for @scanQrCodeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get scanQrCodeButton;
+
+  /// No description provided for @alignQrInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Align the QR code inside the frame'**
+  String get alignQrInstruction;
+
+  /// No description provided for @typeCodeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Type code'**
+  String get typeCodeButton;
+
+  /// No description provided for @orderFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order found'**
+  String get orderFoundTitle;
+
+  /// No description provided for @orderNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Order not found'**
+  String get orderNotFoundTitle;
+
+  /// No description provided for @tryAnotherCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another code.'**
+  String get tryAnotherCode;
+
+  /// No description provided for @tryAgainButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgainButton;
+
+  /// No description provided for @equipmentCodeRequiredError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the equipment code'**
+  String get equipmentCodeRequiredError;
+
+  /// No description provided for @userNotAuthenticatedError.
+  ///
+  /// In en, this message translates to:
+  /// **'User not authenticated'**
+  String get userNotAuthenticatedError;
+
+  /// No description provided for @orderNotFoundError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to find the order'**
+  String get orderNotFoundError;
+
+  /// No description provided for @qrNotRecognizedError.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code not recognized'**
+  String get qrNotRecognizedError;
+
+  /// No description provided for @orderCodeDetectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Order code detected. Use the equipment code or scan the QR code.'**
+  String get orderCodeDetectedError;
+
+  /// No description provided for @orderNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Order #{id}'**
+  String orderNumberLabel(Object id);
+
+  /// No description provided for @clientLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Client: {name}'**
+  String clientLabel(Object name);
+
+  /// No description provided for @scheduledForLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled: {date}'**
+  String scheduledForLabel(Object date);
+
+  /// No description provided for @goToChecklistButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to checklist'**
+  String get goToChecklistButton;
+
+  /// No description provided for @searchAnotherEquipmentButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Search another equipment'**
+  String get searchAnotherEquipmentButton;
+
+  /// No description provided for @statusUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Status unavailable'**
+  String get statusUnavailable;
+
+  /// No description provided for @scheduledNotDefined.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get scheduledNotDefined;
+
+  /// No description provided for @chooseEquipmentIdentification.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how to identify the equipment'**
+  String get chooseEquipmentIdentification;
+
+  /// No description provided for @continueButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueButton;
+
+  /// No description provided for @equipmentCodeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Equipment code: {code}'**
+  String equipmentCodeValue(Object code);
+
+  /// No description provided for @qrCodeValue.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code: {code}'**
+  String qrCodeValue(Object code);
 }
 
 class _AppLocalizationsDelegate

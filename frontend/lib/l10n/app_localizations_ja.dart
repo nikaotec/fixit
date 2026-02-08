@@ -689,4 +689,106 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noOrdersFound => '作業指示が見つかりません';
+
+  @override
+  String get maintenanceExecutionTitle => '保守実行';
+
+  @override
+  String get maintenanceExecutionStartTitle => '保守を開始';
+
+  @override
+  String get maintenanceExecutionEntrySubtitle =>
+      '設備コードを入力するか、QRコードをスキャンしてください。';
+
+  @override
+  String get equipmentCodeLabel => '設備コード';
+
+  @override
+  String get equipmentCodeHint => '例：GER-001 または SO-123';
+
+  @override
+  String get lookupOrderButton => '作業指示を検索';
+
+  @override
+  String get orDivider => 'または';
+
+  @override
+  String get scanQrCodeButton => 'QRコードをスキャン';
+
+  @override
+  String get alignQrInstruction => 'QRコードを枠内に合わせてください';
+
+  @override
+  String get typeCodeButton => 'コードを入力';
+
+  @override
+  String get orderFoundTitle => '作業指示が見つかりました';
+
+  @override
+  String get orderNotFoundTitle => '作業指示が見つかりません';
+
+  @override
+  String get tryAnotherCode => '別のコードを試してください。';
+
+  @override
+  String get tryAgainButton => 'もう一度試す';
+
+  @override
+  String get equipmentCodeRequiredError => '設備コードを入力してください';
+
+  @override
+  String get userNotAuthenticatedError => 'ユーザーが認証されていません';
+
+  @override
+  String get orderNotFoundError => '作業指示を見つけられませんでした';
+
+  @override
+  String get qrNotRecognizedError => 'QRコードを認識できません';
+
+  @override
+  String get orderCodeDetectedError =>
+      '作業指示番号が検出されました。設備コードを使用するか、QRコードをスキャンしてください。';
+
+  @override
+  String orderNumberLabel(Object id) {
+    return '作業指示 #$id';
+  }
+
+  @override
+  String clientLabel(Object name) {
+    return '顧客: $name';
+  }
+
+  @override
+  String scheduledForLabel(Object date) {
+    return '予定: $date';
+  }
+
+  @override
+  String get goToChecklistButton => 'チェックリストへ';
+
+  @override
+  String get searchAnotherEquipmentButton => '別の設備を検索';
+
+  @override
+  String get statusUnavailable => 'ステータス不明';
+
+  @override
+  String get scheduledNotDefined => '未定';
+
+  @override
+  String get chooseEquipmentIdentification => '設備の識別方法を選択してください';
+
+  @override
+  String get continueButton => '続行';
+
+  @override
+  String equipmentCodeValue(Object code) {
+    return '設備コード: $code';
+  }
+
+  @override
+  String qrCodeValue(Object code) {
+    return 'QRコード: $code';
+  }
 }

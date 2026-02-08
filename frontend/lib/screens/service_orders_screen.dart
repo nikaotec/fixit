@@ -11,6 +11,7 @@ import '../models/order.dart';
 import '../providers/user_provider.dart';
 import '../services/order_service.dart';
 import '../services/api_service.dart';
+import '../services/order_event_utils.dart';
 import 'order_details_screen.dart';
 import 'create_service_order_screen.dart';
 
@@ -67,11 +68,47 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     _ordersSub = _ordersChannel!.stream.listen((event) {
       try {
         final data = jsonDecode(event);
-        if (data is Map && data['type'] == 'order_updated') {
-          _loadOrders();
+        if (data is Map && OrderEventUtils.isOrderEvent(data)) {
+          _handleOrderEvent(data);
         }
       } catch (_) {
-        _loadOrders();
+        // ignore malformed events
+      }
+    });
+  }
+
+  Future<void> _handleOrderEvent(Map data) async {
+    final orderId = OrderEventUtils.extractOrderId(data);
+    if (orderId == null) return;
+    if (OrderEventUtils.isDeleteEvent(data)) {
+      if (!mounted) return;
+      setState(() {
+        _orders.removeWhere((order) => order.id == orderId);
+      });
+      return;
+    }
+    final payload = OrderEventUtils.extractOrderPayload(data);
+    if (payload != null) {
+      final updated = Order.fromJson(payload);
+      _upsertOrder(updated);
+      return;
+    }
+    try {
+      final token = Provider.of<UserProvider>(context, listen: false).token;
+      if (token == null) return;
+      final updated = await OrderService.getById(token: token, id: orderId);
+      _upsertOrder(updated);
+    } catch (_) {}
+  }
+
+  void _upsertOrder(Order updated) {
+    if (!mounted) return;
+    setState(() {
+      final index = _orders.indexWhere((order) => order.id == updated.id);
+      if (index >= 0) {
+        _orders[index] = updated;
+      } else {
+        _orders.insert(0, updated);
       }
     });
   }

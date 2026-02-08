@@ -694,4 +694,107 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noOrdersFound => 'No orders found';
+
+  @override
+  String get maintenanceExecutionTitle => 'Maintenance Execution';
+
+  @override
+  String get maintenanceExecutionStartTitle => 'Start maintenance';
+
+  @override
+  String get maintenanceExecutionEntrySubtitle =>
+      'Enter the equipment code or scan the QR code.';
+
+  @override
+  String get equipmentCodeLabel => 'Equipment code';
+
+  @override
+  String get equipmentCodeHint => 'e.g. GER-001 or SO-123';
+
+  @override
+  String get lookupOrderButton => 'Find order';
+
+  @override
+  String get orDivider => 'or';
+
+  @override
+  String get scanQrCodeButton => 'Scan QR code';
+
+  @override
+  String get alignQrInstruction => 'Align the QR code inside the frame';
+
+  @override
+  String get typeCodeButton => 'Type code';
+
+  @override
+  String get orderFoundTitle => 'Order found';
+
+  @override
+  String get orderNotFoundTitle => 'Order not found';
+
+  @override
+  String get tryAnotherCode => 'Try another code.';
+
+  @override
+  String get tryAgainButton => 'Try again';
+
+  @override
+  String get equipmentCodeRequiredError => 'Enter the equipment code';
+
+  @override
+  String get userNotAuthenticatedError => 'User not authenticated';
+
+  @override
+  String get orderNotFoundError => 'Unable to find the order';
+
+  @override
+  String get qrNotRecognizedError => 'QR code not recognized';
+
+  @override
+  String get orderCodeDetectedError =>
+      'Order code detected. Use the equipment code or scan the QR code.';
+
+  @override
+  String orderNumberLabel(Object id) {
+    return 'Order #$id';
+  }
+
+  @override
+  String clientLabel(Object name) {
+    return 'Client: $name';
+  }
+
+  @override
+  String scheduledForLabel(Object date) {
+    return 'Scheduled: $date';
+  }
+
+  @override
+  String get goToChecklistButton => 'Go to checklist';
+
+  @override
+  String get searchAnotherEquipmentButton => 'Search another equipment';
+
+  @override
+  String get statusUnavailable => 'Status unavailable';
+
+  @override
+  String get scheduledNotDefined => 'Not set';
+
+  @override
+  String get chooseEquipmentIdentification =>
+      'Choose how to identify the equipment';
+
+  @override
+  String get continueButton => 'Continue';
+
+  @override
+  String equipmentCodeValue(Object code) {
+    return 'Equipment code: $code';
+  }
+
+  @override
+  String qrCodeValue(Object code) {
+    return 'QR code: $code';
+  }
 }
