@@ -16,7 +16,9 @@ import 'order_details_screen.dart';
 import 'create_service_order_screen.dart';
 
 class ServiceOrdersScreen extends StatefulWidget {
-  const ServiceOrdersScreen({super.key});
+  const ServiceOrdersScreen({super.key, this.isActive = false});
+
+  final bool isActive;
 
   @override
   State<ServiceOrdersScreen> createState() => ServiceOrdersScreenState();
@@ -31,11 +33,14 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
   String? _lastToken;
   WebSocketChannel? _ordersChannel;
   StreamSubscription? _ordersSub;
+  Timer? _pollTimer;
+  static const Duration _pollInterval = Duration(seconds: 30);
 
   @override
   void initState() {
     super.initState();
     _loadOrders();
+    _updatePolling();
   }
 
   void refreshOrders() {
@@ -54,10 +59,43 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant ServiceOrdersScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive != widget.isActive) {
+      _updatePolling();
+      if (widget.isActive) {
+        _loadOrders(showLoading: false);
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    _stopPolling();
     _ordersSub?.cancel();
     _ordersChannel?.sink.close();
     super.dispose();
+  }
+
+  void _updatePolling() {
+    if (widget.isActive) {
+      _startPolling();
+    } else {
+      _stopPolling();
+    }
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(_pollInterval, (_) {
+      if (!mounted || _isLoading) return;
+      _loadOrders(showLoading: false);
+    });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
   }
 
   void _connectRealtime(String token) {
@@ -113,20 +151,27 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     });
   }
 
-  Future<void> _loadOrders() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _loadOrders({bool showLoading = true}) async {
+    if (showLoading) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
     try {
       final token = Provider.of<UserProvider>(context, listen: false).token;
       if (token == null) return;
       final list = await OrderService.getAll(token: token);
-      setState(() => _orders = list);
+      if (!mounted) return;
+      setState(() {
+        _orders = list;
+        _error = null;
+      });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (showLoading && mounted) setState(() => _isLoading = false);
     }
   }
 

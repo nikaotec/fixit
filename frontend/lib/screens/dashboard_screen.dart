@@ -224,7 +224,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             // Tab 1 (Orders)
-            ServiceOrdersScreen(key: _ordersKey),
+            ServiceOrdersScreen(
+              key: _ordersKey,
+              isActive: _selectedIndex == 1,
+            ),
             // Tab 2 (Inventory)
             const InventoryScreen(),
             // Tab 3 (Notifications)

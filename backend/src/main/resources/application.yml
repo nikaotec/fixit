@@ -29,6 +29,13 @@ spring:
 app:
   storage:
     base-path: ./storage
+  apns:
+    enabled: ${APP_APNS_ENABLED:false}
+    use-sandbox: ${APP_APNS_USE_SANDBOX:false}
+    team-id: ${APP_APNS_TEAM_ID:}
+    key-id: ${APP_APNS_KEY_ID:}
+    bundle-id: ${APP_APNS_BUNDLE_ID:}
+    private-key: ${APP_APNS_PRIVATE_KEY:}
 
 ---
 

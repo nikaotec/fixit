@@ -125,6 +125,40 @@ class ApiService {
     }
   }
 
+  static Future<void> registerFcmToken({
+    required String token,
+    required String fcmToken,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/me/fcm-token'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'token': fcmToken}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to register FCM token: ${response.statusCode}');
+    }
+  }
+
+  static Future<void> registerApnsToken({
+    required String token,
+    required String apnsToken,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/me/apns-token'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'token': apnsToken}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to register APNS token: ${response.statusCode}');
+    }
+  }
+
   static Future<List<Order>> fetchOrders() async {
     // Need to get token here
     // For MVP simplicity using hardcoded or handled via interceptor in real app

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart'; // Needed for ThemeMode and Locale
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/google_auth_service.dart';
+import '../services/push_notification_service.dart';
 
 class UserProvider with ChangeNotifier {
   static const List<String> _supportedLanguageTags = [
@@ -148,6 +149,7 @@ class UserProvider with ChangeNotifier {
 
       debugPrint('✅ Login successful for: $_name (Role: $_role)');
       notifyListeners();
+      PushNotificationService.updateAuthToken(_token);
       // Fetch fresh profile data in background
       fetchUserProfile();
       return true;
@@ -191,6 +193,7 @@ class UserProvider with ChangeNotifier {
 
         debugPrint('✅ Registration and auto-login successful for: $_name');
         notifyListeners();
+        PushNotificationService.updateAuthToken(_token);
       }
 
       return {'success': true, 'message': 'Account created successfully!'};
@@ -257,6 +260,7 @@ class UserProvider with ChangeNotifier {
 
       debugPrint('✅ Google Sign-In complete for: $_name (Role: $_role)');
       notifyListeners();
+      PushNotificationService.updateAuthToken(_token);
 
       return {
         'success': true,
@@ -274,6 +278,7 @@ class UserProvider with ChangeNotifier {
     _role = null;
     _name = null;
     _email = null;
+    PushNotificationService.updateAuthToken(null);
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     notifyListeners();
@@ -289,6 +294,7 @@ class UserProvider with ChangeNotifier {
     _name = prefs.getString('name');
     _email = prefs.getString('email');
     notifyListeners();
+    PushNotificationService.updateAuthToken(_token);
 
     // Refresh data
     if (_token != null) fetchUserProfile();

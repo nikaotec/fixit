@@ -1,11 +1,13 @@
 package com.nikao.ordemservico.controller;
 
 import com.nikao.ordemservico.domain.User;
+import com.nikao.ordemservico.dto.DeviceTokenRequest;
 import com.nikao.ordemservico.repository.UserRepository;
 import com.nikao.ordemservico.service.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -40,5 +42,19 @@ public class UserController {
         String email = principal.getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    @PostMapping("/me/fcm-token")
+    public void updateFcmToken(@Valid @RequestBody DeviceTokenRequest request) {
+        var user = currentUserService.getCurrentUser();
+        user.setFcmToken(request.getToken());
+        userRepository.save(user);
+    }
+
+    @PostMapping("/me/apns-token")
+    public void updateApnsToken(@Valid @RequestBody DeviceTokenRequest request) {
+        var user = currentUserService.getCurrentUser();
+        user.setApnsToken(request.getToken());
+        userRepository.save(user);
     }
 }

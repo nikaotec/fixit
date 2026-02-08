@@ -30,6 +30,8 @@ public class User {
     private Company company;
 
     private String fcmToken;
+    @Column(name = "apns_token")
+    private String apnsToken;
     private boolean active = true;
 
     @Enumerated(EnumType.STRING)

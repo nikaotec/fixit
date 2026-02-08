@@ -5,10 +5,18 @@ import 'l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'providers/user_provider.dart';
 import 'screens/login_screen.dart';
 import 'theme/app_theme.dart';
 import 'screens/dashboard_screen.dart';
+import 'services/local_notification_service.dart';
+import 'services/push_notification_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +26,8 @@ void main() async {
     // Ignore missing .env in non-dev environments.
   }
   await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  await LocalNotificationService.initialize();
 
   runApp(
     MultiProvider(
@@ -38,6 +48,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   GoRouter? _router;
+  bool _pushInitialized = false;
 
   @override
   void didChangeDependencies() {
@@ -65,6 +76,10 @@ class _MyAppState extends State<MyApp> {
           return null;
         },
       );
+    }
+    if (!_pushInitialized) {
+      _pushInitialized = true;
+      PushNotificationService.initialize();
     }
   }
 

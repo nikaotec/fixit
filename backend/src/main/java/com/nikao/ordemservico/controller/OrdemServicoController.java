@@ -3,8 +3,8 @@ package com.nikao.ordemservico.controller;
 import com.nikao.ordemservico.domain.OrdemServico;
 import com.nikao.ordemservico.repository.ChecklistExecutionRepository;
 import com.nikao.ordemservico.repository.OrdemServicoRepository;
-import com.nikao.ordemservico.realtime.OrderRealtimeService;
 import com.nikao.ordemservico.service.CurrentUserService;
+import com.nikao.ordemservico.service.N8nService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
@@ -24,7 +24,8 @@ public class OrdemServicoController {
     CurrentUserService currentUserService;
 
     @Autowired
-    OrderRealtimeService orderRealtimeService;
+    N8nService n8nService;
+
 
     @GetMapping
     public List<OrdemServico> getAllOrdens() {
@@ -82,7 +83,7 @@ public class OrdemServicoController {
             ordem.setResponsavel(user);
         }
         OrdemServico saved = ordemServicoRepository.save(ordem);
-        orderRealtimeService.broadcastOrderUpdate(saved);
+        n8nService.notifyOrderAssigned(saved);
         return saved;
     }
 
@@ -101,8 +102,6 @@ public class OrdemServicoController {
         ordem.setStatus(com.nikao.ordemservico.domain.StatusOrdem.FINALIZADA);
         ordem.setDataFinalizacao(LocalDateTime.now());
 
-        OrdemServico saved = ordemServicoRepository.save(ordem);
-        orderRealtimeService.broadcastOrderUpdate(saved);
-        return saved;
+        return ordemServicoRepository.save(ordem);
     }
 }

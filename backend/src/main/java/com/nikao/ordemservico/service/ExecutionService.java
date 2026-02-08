@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nikao.ordemservico.domain.*;
 import com.nikao.ordemservico.dto.*;
 import com.nikao.ordemservico.repository.*;
-import com.nikao.ordemservico.realtime.OrderRealtimeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,7 +60,6 @@ public class ExecutionService {
     private AssinaturaRepository assinaturaRepository;
 
     @Autowired
-    private OrderRealtimeService orderRealtimeService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -390,8 +388,7 @@ public class ExecutionService {
         OrdemServico ordem = execution.getOrdemServico();
         ordem.setStatus(StatusOrdem.FINALIZADA);
         ordem.setDataFinalizacao(LocalDateTime.now());
-        OrdemServico savedOrdem = ordemServicoRepository.save(ordem);
-        orderRealtimeService.broadcastOrderUpdate(savedOrdem);
+        ordemServicoRepository.save(ordem);
 
         audit("EXECUTION_FINALIZED", "checklist_execution", execution.getId().toString(), execution.getTecnico(), execution.getCompany(), execution.getDeviceId());
 
