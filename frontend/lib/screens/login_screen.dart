@@ -130,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: isDark
                                 ? AppColors.primaryDarkTheme
                                 : AppColors.primary,
-                            tooltip: 'Change Language',
+                            tooltip: l10n.languageLabel,
                           ),
                         ),
                       ),
@@ -568,6 +568,17 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showLanguageSelector(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
+    final languages = [
+      {'code': 'en', 'label': '🇺🇸 ${l10n.englishLabel} (US)'},
+      {'code': 'pt', 'label': '🇧🇷 ${l10n.portugueseLabel} (BR)'},
+      {'code': 'es', 'label': '🇪🇸 Español'},
+      {'code': 'fr', 'label': '🇫🇷 Français'},
+      {'code': 'it', 'label': '🇮🇹 Italiano'},
+      {'code': 'de', 'label': '🇩🇪 Deutsch'},
+      {'code': 'zh', 'label': '🇨🇳 简体中文'},
+      {'code': 'ko', 'label': '🇰🇷 한국어'},
+      {'code': 'ja', 'label': '🇯🇵 日本語'},
+    ];
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -577,24 +588,16 @@ class _LoginScreenState extends State<LoginScreen> {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
+            children: languages.map((lang) {
+              return ListTile(
                 leading: const Icon(Icons.language),
-                title: Text(l10n.portugueseLabel),
+                title: Text(lang['label']!),
                 onTap: () {
-                  userProvider.setLocale(const Locale('pt'));
+                  userProvider.setLocale(Locale(lang['code']!));
                   Navigator.pop(context);
                 },
-              ),
-              ListTile(
-                leading: const Icon(Icons.language),
-                title: Text(l10n.englishLabel),
-                onTap: () {
-                  userProvider.setLocale(const Locale('en'));
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+              );
+            }).toList(),
           ),
         );
       },

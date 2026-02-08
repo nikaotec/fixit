@@ -84,10 +84,7 @@ class _MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('en'), // English
-        Locale('pt'), // Portuguese
-      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: _router,
     );
   }

@@ -5,6 +5,17 @@ import '../services/api_service.dart';
 import '../services/google_auth_service.dart';
 
 class UserProvider with ChangeNotifier {
+  static const List<String> _supportedLanguageTags = [
+    'en',
+    'pt',
+    'es',
+    'fr',
+    'it',
+    'de',
+    'zh',
+    'ko',
+    'ja',
+  ];
   String? _id;
   String? _token;
   String? _role;
@@ -29,14 +40,20 @@ class UserProvider with ChangeNotifier {
       _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
     }
 
-    final languageCode = prefs.getString('languageCode');
-    if (languageCode != null) {
-      _locale = Locale(languageCode);
+    final languageTag = prefs.getString('languageTag');
+    final legacyLanguageCode = prefs.getString('languageCode');
+    if (languageTag != null) {
+      _locale = _localeFromTag(languageTag);
+    } else if (legacyLanguageCode != null) {
+      _locale = Locale(legacyLanguageCode);
     } else {
       // Auto-detect system language
       final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
-      if (systemLocale.languageCode == 'pt') {
-        _locale = const Locale('pt');
+      final systemTag = _localeToTag(systemLocale);
+      if (_supportedLanguageTags.contains(systemTag)) {
+        _locale = systemLocale;
+      } else if (_supportedLanguageTags.contains(systemLocale.languageCode)) {
+        _locale = Locale(systemLocale.languageCode);
       } else {
         _locale = const Locale('en');
       }
@@ -52,11 +69,38 @@ class UserProvider with ChangeNotifier {
   }
 
   Future<void> setLocale(Locale locale) async {
-    if (!['en', 'pt'].contains(locale.languageCode)) return;
+    final tag = _localeToTag(locale);
+    if (!_supportedLanguageTags.contains(tag) &&
+        !_supportedLanguageTags.contains(locale.languageCode)) {
+      return;
+    }
     _locale = locale;
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('languageTag', tag);
     await prefs.setString('languageCode', locale.languageCode);
     notifyListeners();
+  }
+
+  String _localeToTag(Locale locale) {
+    final script = locale.scriptCode;
+    if (script != null && script.isNotEmpty) {
+      return '${locale.languageCode}-$script';
+    }
+    return locale.languageCode;
+  }
+
+  Locale _localeFromTag(String tag) {
+    final parts = tag.split(RegExp('[-_]'));
+    if (parts.length == 1) {
+      return Locale(parts[0]);
+    }
+    if (parts.length == 2 && parts[1].length == 4) {
+      return Locale.fromSubtags(languageCode: parts[0], scriptCode: parts[1]);
+    }
+    if (parts.length >= 2) {
+      return Locale(parts[0], parts[1]);
+    }
+    return const Locale('en');
   }
 
   Future<void> fetchUserProfile() async {

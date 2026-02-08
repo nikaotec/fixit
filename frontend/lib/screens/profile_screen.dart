@@ -391,34 +391,41 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         final userProvider = Provider.of<UserProvider>(context, listen: false);
+        final l10n = AppLocalizations.of(context)!;
+        final languages = _languageOptions(l10n);
         return AlertDialog(
-          title: const Text('Select Language'),
+          title: Text(l10n.languageLabel),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: const Text('English (US)'),
-                leading: const Text('🇺🇸'),
+            children: languages.map((lang) {
+              return ListTile(
+                title: Text(lang['label']!),
+                leading: Text(lang['flag']!),
                 onTap: () {
-                  userProvider.setLocale(const Locale('en'));
+                  userProvider.setLocale(Locale(lang['code']!));
                   Navigator.pop(context);
                 },
-                selected: userProvider.locale.languageCode == 'en',
-              ),
-              ListTile(
-                title: const Text('Português (BR)'),
-                leading: const Text('🇧🇷'),
-                onTap: () {
-                  userProvider.setLocale(const Locale('pt'));
-                  Navigator.pop(context);
-                },
-                selected: userProvider.locale.languageCode == 'pt',
-              ),
-            ],
+                selected: userProvider.locale.languageCode == lang['code'],
+              );
+            }).toList(),
           ),
         );
       },
     );
+  }
+
+  List<Map<String, String>> _languageOptions(AppLocalizations l10n) {
+    return [
+      {'code': 'en', 'label': '${l10n.englishLabel} (US)', 'flag': '🇺🇸'},
+      {'code': 'pt', 'label': '${l10n.portugueseLabel} (BR)', 'flag': '🇧🇷'},
+      {'code': 'es', 'label': 'Español', 'flag': '🇪🇸'},
+      {'code': 'fr', 'label': 'Français', 'flag': '🇫🇷'},
+      {'code': 'it', 'label': 'Italiano', 'flag': '🇮🇹'},
+      {'code': 'de', 'label': 'Deutsch', 'flag': '🇩🇪'},
+      {'code': 'zh', 'label': '简体中文', 'flag': '🇨🇳'},
+      {'code': 'ko', 'label': '한국어', 'flag': '🇰🇷'},
+      {'code': 'ja', 'label': '日本語', 'flag': '🇯🇵'},
+    ];
   }
 
   Widget _buildLanguageTrailing(
@@ -432,7 +439,14 @@ class ProfileScreen extends StatelessWidget {
     // For now, let's just make it look right.
     // We can use Provider.of(context) here if we change the signature or if context is available.
     final userProvider = Provider.of<UserProvider>(context);
-    final isEn = userProvider.locale.languageCode == 'en';
+    final l10n = AppLocalizations.of(context)!;
+    final current = _languageOptions(l10n).firstWhere(
+      (lang) => lang['code'] == userProvider.locale.languageCode,
+      orElse: () => {
+        'label': '${l10n.englishLabel} (US)',
+        'flag': '🇺🇸',
+      },
+    );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -446,14 +460,14 @@ class ProfileScreen extends StatelessWidget {
           ),
           child: Center(
             child: Text(
-              isEn ? '🇺🇸' : '🇧🇷',
+              current['flag'] ?? '🇺🇸',
               style: const TextStyle(fontSize: 10),
             ),
           ),
         ),
         const SizedBox(width: 8),
         Text(
-          isEn ? 'English (US)' : 'Português (BR)',
+          current['label'] ?? '${l10n.englishLabel} (US)',
           style: AppTypography.bodyText.copyWith(
             color: textSecondaryColor,
             fontWeight: FontWeight.normal,

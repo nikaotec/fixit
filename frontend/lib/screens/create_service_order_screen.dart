@@ -40,6 +40,7 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
   final TextEditingController _modelController = TextEditingController();
   final SpeechService _speechService = SpeechService();
   bool _listeningProblem = false;
+  bool _speechAvailable = true;
   String _problemBaseText = '';
   String _problemLocale = 'pt_BR';
   String _problemPartial = '';
@@ -49,6 +50,7 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
     super.initState();
     _selectedTechnicianId = 'none';
     _loadVoiceLocale();
+    _checkSpeechAvailability();
     _loadData();
   }
 
@@ -60,6 +62,12 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
         ? 'en_US'
         : 'pt_BR';
     setState(() => _problemLocale = saved ?? fallback);
+  }
+
+  Future<void> _checkSpeechAvailability() async {
+    final available = await _speechService.ensureInitialized();
+    if (!mounted) return;
+    setState(() => _speechAvailable = available);
   }
 
   @override
@@ -429,10 +437,14 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           OutlinedButton.icon(
-                            onPressed: _toggleProblemDictation,
+                            onPressed:
+                                _speechAvailable ? _toggleProblemDictation : null,
                             icon: Icon(
                               _listeningProblem ? Icons.mic : Icons.mic_none,
                             ),
@@ -442,7 +454,6 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
                                   : l10n.voiceInput,
                             ),
                           ),
-                          const SizedBox(width: 8),
                           TextButton.icon(
                             onPressed: _speechService.isListening
                                 ? () async {
@@ -458,13 +469,23 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
                             icon: const Icon(Icons.stop_circle_outlined),
                             label: Text(l10n.stopListening),
                           ),
-                          const SizedBox(width: 8),
                           _buildLocaleSelector(l10n),
-                          const Spacer(),
                           if (_listeningProblem)
                             _buildListeningBadge(isDark, l10n.listening),
                         ],
                       ),
+                      if (!_speechAvailable) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          l10n.voiceNotAvailable,
+                          style: AppTypography.caption.copyWith(
+                            color: isDark
+                                ? AppColors.slate400
+                                : AppColors.slate600,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
                       if (_problemPartial.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Text(

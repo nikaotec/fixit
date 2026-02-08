@@ -43,6 +43,7 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
   late final bool _ownsFinalObservationController;
   final SpeechService _speechService = SpeechService();
   bool _listeningObservation = false;
+  bool _speechAvailable = true;
   String _observationBaseText = '';
   String _observationLocale = 'pt_BR';
   String _observationPartial = '';
@@ -62,6 +63,7 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
     _finalObservationController =
         widget.serviceDescriptionController ?? TextEditingController();
     _loadVoiceLocale();
+    _checkSpeechAvailability();
   }
 
   Future<void> _loadVoiceLocale() async {
@@ -74,6 +76,12 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
         ? 'en_US'
         : 'pt_BR';
     setState(() => _observationLocale = saved ?? fallback);
+  }
+
+  Future<void> _checkSpeechAvailability() async {
+    final available = await _speechService.ensureInitialized();
+    if (!mounted) return;
+    setState(() => _speechAvailable = available);
   }
 
   @override
@@ -338,10 +346,13 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               OutlinedButton.icon(
-                onPressed: _toggleObservationDictation,
+                onPressed: _speechAvailable ? _toggleObservationDictation : null,
                 icon: Icon(
                   _listeningObservation ? Icons.mic : Icons.mic_none,
                 ),
@@ -351,7 +362,6 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
                       : (l10n?.voiceInput ?? 'Entrada por voz'),
                 ),
               ),
-              const SizedBox(width: 8),
               TextButton.icon(
                 onPressed: _speechService.isListening
                     ? () async {
@@ -367,9 +377,7 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
                 icon: const Icon(Icons.stop_circle_outlined),
                 label: Text(l10n?.stopListening ?? 'Parar'),
               ),
-              const SizedBox(width: 8),
               _buildLocaleSelector(l10n),
-              const Spacer(),
               if (_listeningObservation)
                 _buildListeningBadge(
                   isDark,
@@ -377,6 +385,16 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
                 ),
             ],
           ),
+          if (!_speechAvailable) ...[
+            const SizedBox(height: 6),
+            Text(
+              l10n?.voiceNotAvailable ?? 'Entrada de voz indisponível',
+              style: AppTypography.caption.copyWith(
+                color: isDark ? AppColors.slate400 : AppColors.slate600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
           if (_observationPartial.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(

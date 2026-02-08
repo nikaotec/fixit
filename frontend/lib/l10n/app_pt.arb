@@ -39,7 +39,7 @@
   "searchPlaceholder": "Buscar ordens, ativos...",
   "statusOverdue": "Atrasada",
   "createEquipment": "Criar Equipamento",
-  "createChecklist": "Criar Checklist",
+  "createChecklist": "Criar checklist",
   "mainDashboard": "Painel Principal",
   "createNewClient": "Criar Novo Cliente",
   "cancel": "Cancelar",
@@ -265,12 +265,10 @@
       "name": {}
     }
   },
-  "meUnavailable": "Eu (indisponível)"
-  ,
+  "meUnavailable": "Eu (indisponível)",
   "recentOrdersError": "Erro ao carregar ordens recentes",
   "noRecentOrders": "Sem ordens recentes",
-  "createServiceOrderTitle": "Criar Ordem de Serviço"
-  ,
+  "createServiceOrderTitle": "Criar Ordem de Serviço",
   "ordersLoadError": "Erro ao carregar ordens",
   "noOrdersFound": "Nenhuma ordem encontrada"
 }

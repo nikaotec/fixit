@@ -49,6 +49,8 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
   final _serviceDescriptionController = TextEditingController();
   final SpeechService _speechService = SpeechService();
   bool _listeningService = false;
+  bool _speechAvailable = true;
+  bool _checkedSpeech = false;
   String _serviceBaseText = '';
   String _serviceLocale = 'pt_BR';
   String _servicePartial = '';
@@ -187,6 +189,10 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
       _loadedLocale = true;
       _loadVoiceLocale();
     }
+    if (!_checkedSpeech) {
+      _checkedSpeech = true;
+      _checkSpeechAvailability();
+    }
   }
 
   Future<void> _loadVoiceLocale() async {
@@ -197,6 +203,12 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
         ? 'en_US'
         : 'pt_BR';
     setState(() => _serviceLocale = saved ?? fallback);
+  }
+
+  Future<void> _checkSpeechAvailability() async {
+    final available = await _speechService.ensureInitialized();
+    if (!mounted) return;
+    setState(() => _speechAvailable = available);
   }
 
   void _connectRealtime(String token) {
@@ -499,10 +511,13 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 OutlinedButton.icon(
-                  onPressed: _toggleServiceDictation,
+                  onPressed: _speechAvailable ? _toggleServiceDictation : null,
                   icon: Icon(
                     _listeningService ? Icons.mic : Icons.mic_none,
                   ),
@@ -512,7 +527,6 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
                         : (l10n?.voiceInput ?? 'Entrada por voz'),
                   ),
                 ),
-                const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: _speechService.isListening
                       ? () async {
@@ -528,13 +542,21 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
                   icon: const Icon(Icons.stop_circle_outlined),
                   label: Text(l10n?.stopListening ?? 'Parar'),
                 ),
-                const SizedBox(width: 8),
                 _buildLocaleSelector(l10n),
-                const Spacer(),
                 if (_listeningService)
                   _buildListeningBadge(isDark, l10n?.listening ?? 'Ouvindo...'),
               ],
             ),
+            if (!_speechAvailable) ...[
+              const SizedBox(height: 6),
+              Text(
+                l10n?.voiceNotAvailable ?? 'Entrada de voz indisponível',
+                style: AppTypography.caption.copyWith(
+                  color: isDark ? AppColors.slate400 : AppColors.slate600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
             if (_servicePartial.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(

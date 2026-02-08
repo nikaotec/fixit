@@ -386,11 +386,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   Widget _buildLanguageSelector(bool isDark, AppLocalizations l10n) {
     final languages = [
       {'code': 'en', 'name': '🇺🇸 ${l10n.englishLabel} (US)'},
-      {'code': 'es', 'name': '🇪🇸 Espanhol'},
-      {'code': 'fr', 'name': '🇫🇷 Francês'},
-      {'code': 'de', 'name': '🇩🇪 Alemão'},
-      {'code': 'ar', 'name': '🇸🇦 Árabe'},
-      {'code': 'pt', 'name': '🇧🇷 ${l10n.portugueseLabel}'},
+      {'code': 'pt', 'name': '🇧🇷 ${l10n.portugueseLabel} (BR)'},
+      {'code': 'es', 'name': '🇪🇸 Español'},
+      {'code': 'fr', 'name': '🇫🇷 Français'},
+      {'code': 'it', 'name': '🇮🇹 Italiano'},
+      {'code': 'de', 'name': '🇩🇪 Deutsch'},
+      {'code': 'zh', 'name': '🇨🇳 简体中文'},
+      {'code': 'ko', 'name': '🇰🇷 한국어'},
+      {'code': 'ja', 'name': '🇯🇵 日本語'},
     ];
 
     return Column(

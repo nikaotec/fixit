@@ -129,7 +129,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get createEquipment => 'Criar Equipamento';
 
   @override
-  String get createChecklist => 'Criar Checklist';
+  String get createChecklist => 'Criar checklist';
 
   @override
   String get mainDashboard => 'Painel Principal';
