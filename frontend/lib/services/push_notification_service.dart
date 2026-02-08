@@ -37,7 +37,7 @@ class PushNotificationService {
       );
     });
 
-    FirebaseMessaging.onTokenRefresh.listen((token) {
+    _messaging.onTokenRefresh.listen((token) {
       _sendToken(token);
     });
 

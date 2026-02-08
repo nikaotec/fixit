@@ -12,7 +12,7 @@ class LocalNotificationService {
 
   static Future<void> initialize() async {
     if (_initialized) return;
-    const androidSettings = AndroidInitializationSettings('ic_launcher');
+    const androidSettings = AndroidInitializationSettings('ic_notification');
     const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(
       android: androidSettings,
