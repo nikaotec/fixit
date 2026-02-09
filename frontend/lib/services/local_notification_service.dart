@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class LocalNotificationService {
@@ -12,13 +13,21 @@ class LocalNotificationService {
 
   static Future<void> initialize() async {
     if (_initialized) return;
-    const androidSettings = AndroidInitializationSettings('ic_notification');
     const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(
-      android: androidSettings,
+      android: AndroidInitializationSettings('ic_notification'),
       iOS: iosSettings,
     );
-    await _plugin.initialize(settings);
+    try {
+      await _plugin.initialize(settings);
+    } on PlatformException catch (e) {
+      if (e.code != 'invalid_icon') rethrow;
+      const fallbackSettings = InitializationSettings(
+        android: AndroidInitializationSettings('ic_launcher'),
+        iOS: iosSettings,
+      );
+      await _plugin.initialize(fallbackSettings);
+    }
     await _createAndroidChannel();
     _initialized = true;
   }

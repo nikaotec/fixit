@@ -33,6 +33,8 @@ class OrderService {
     String? equipmentModel,
     DateTime? dataPrevista,
   }) async {
+    final responsavelIdNum =
+        responsavelId != null ? int.tryParse(responsavelId) : null;
     final response = await http.post(
       Uri.parse('${ApiService.baseUrl}/ordens'),
       headers: {
@@ -43,7 +45,8 @@ class OrderService {
         if (equipamentoId != null) 'equipamento': {'id': equipamentoId},
         if (checklistId != null) 'checklist': {'id': checklistId},
         if (clienteId != null) 'cliente': {'id': clienteId},
-        if (responsavelId != null) 'responsavel': {'id': responsavelId},
+        if (responsavelId != null)
+          'responsavel': {'id': responsavelIdNum ?? responsavelId},
         'prioridade': prioridade,
         'tipo': orderType,
         if (problemDescription != null && problemDescription.trim().isNotEmpty)

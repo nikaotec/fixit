@@ -128,15 +128,50 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     final payload = OrderEventUtils.extractOrderPayload(data);
     if (payload != null) {
       final updated = Order.fromJson(payload);
-      _upsertOrder(updated);
+      _applyRealtimeOrder(updated);
       return;
     }
     try {
       final token = Provider.of<UserProvider>(context, listen: false).token;
       if (token == null) return;
       final updated = await OrderService.getById(token: token, id: orderId);
+      _applyRealtimeOrder(updated);
+    } catch (e) {
+      _handleOrderFetchError(orderId, e);
+    }
+  }
+
+  void _applyRealtimeOrder(Order updated) {
+    final currentUserId =
+        int.tryParse(Provider.of<UserProvider>(context, listen: false).id ?? '');
+    if (_isOrderRelevant(updated, currentUserId)) {
       _upsertOrder(updated);
-    } catch (_) {}
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _orders.removeWhere((order) => order.id == updated.id);
+    });
+  }
+
+  void _handleOrderFetchError(int orderId, Object error) {
+    final raw = error.toString();
+    if (!raw.contains('401') &&
+        !raw.contains('403') &&
+        !raw.contains('404')) {
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      _orders.removeWhere((order) => order.id == orderId);
+    });
+  }
+
+  bool _isOrderRelevant(Order order, int? currentUserId) {
+    if (currentUserId == null) return true;
+    final isCreator = order.criador?.id == currentUserId;
+    final isResponsible = order.responsavel?.id == currentUserId;
+    return isCreator || isResponsible;
   }
 
   void _upsertOrder(Order updated) {
