@@ -658,6 +658,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get responsibleTechnician => 'Técnico responsável';
 
   @override
+  String get assignToMe => 'Atribuir a mim';
+
+  @override
   String get priorityLabel => 'Prioridade';
 
   @override
@@ -800,4 +803,99 @@ class AppLocalizationsPt extends AppLocalizations {
   String qrCodeValue(Object code) {
     return 'QR code: $code';
   }
+
+  @override
+  String get loginFailed => 'Falha no login. Verifique suas credenciais.';
+
+  @override
+  String get appTagline =>
+      'Gerenciamento profissional de manutenção\ne serviços para equipes globais.';
+
+  @override
+  String get continueWithGoogle => 'Continuar com o Google';
+
+  @override
+  String get emailHintLogin => 'nome@empresa.com';
+
+  @override
+  String percentOfTotal(Object percent) {
+    return '$percent do total';
+  }
+
+  @override
+  String get noItemsFound => 'Nenhum item encontrado';
+
+  @override
+  String get noEquipmentYet => 'Nenhum equipamento cadastrado';
+
+  @override
+  String get noEquipmentMessage =>
+      'Toque no botão + para cadastrar seu primeiro equipamento.';
+
+  @override
+  String get searchingLocation => 'Buscando localização...';
+
+  @override
+  String get locationUnavailable => 'Localização indisponível';
+
+  @override
+  String get locationFetchError => 'Erro ao buscar localização';
+
+  @override
+  String daysAgo(int count) {
+    return '$count dias';
+  }
+
+  @override
+  String hoursAgo(int count) {
+    return '$count h';
+  }
+
+  @override
+  String minutesAgo(int count) {
+    return '$count min';
+  }
+
+  @override
+  String get locationCaptured => 'Localização capturada';
+
+  @override
+  String get locationNotCaptured => 'Sem localização definida';
+
+  @override
+  String get noClientSelected => 'Nenhum (sem cliente)';
+
+  @override
+  String get basicInfoSection => 'INFORMAÇÕES BÁSICAS';
+
+  @override
+  String get clientSection => 'CLIENTE';
+
+  @override
+  String get locationSectionLabel => 'LOCALIZAÇÃO';
+
+  @override
+  String get capturingLocation => 'Capturando localização...';
+
+  @override
+  String get locationMethodGps => 'GPS atual';
+
+  @override
+  String get locationMethodAddress => 'Digitar endereço';
+
+  @override
+  String get addressSearchHint => 'Ex: Av. Paulista, 1000, São Paulo';
+
+  @override
+  String get searchingAddress => 'Buscando endereço...';
+
+  @override
+  String get addressNotFound =>
+      'Endereço não encontrado. Tente ser mais específico.';
+
+  @override
+  String get selectAddress => 'Selecione o endereço';
+
+  @override
+  String get addressSearchError => 'Erro ao buscar endereço';
 }

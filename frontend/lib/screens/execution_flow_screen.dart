@@ -1,34 +1,30 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:provider/provider.dart';
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+
 import 'dashboard_screen.dart';
-import 'package:share_plus/share_plus.dart';
+
 import 'package:image_picker/image_picker.dart';
 
 import '../models/execution_models.dart';
 import '../models/local_photo.dart';
 import '../l10n/app_localizations.dart';
-import '../providers/user_provider.dart';
-import '../services/api_service.dart';
+
 import '../services/device_service.dart';
-import '../services/execution_service.dart';
+import '../services/firestore_execution_service.dart';
+import '../services/firestore_helper.dart';
 import '../services/speech_service.dart';
 import '../services/voice_preferences.dart';
-import '../services/order_event_utils.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import 'execution_review_screen.dart';
 import 'execution_report_preview_screen.dart';
 
 class ExecutionFlowScreen extends StatefulWidget {
-  final int? orderId;
+  final String? orderId;
   final String? qrPayload;
   final String? equipmentTitle;
   final String? orderType;
@@ -61,13 +57,11 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
   ExecutionStartResponse? _execution;
   bool _autoStarted = false;
   bool _isFinalized = false;
-  String? _lastToken;
-  WebSocketChannel? _ordersChannel;
   StreamSubscription? _ordersSub;
 
-  final Map<int, bool> _itemStatus = {};
-  final Map<int, TextEditingController> _observations = {};
-  final Map<int, List<LocalPhoto>> _pendingEvidence = {};
+  final Map<String, bool> _itemStatus = {};
+  final Map<String, TextEditingController> _observations = {};
+  final Map<String, List<LocalPhoto>> _pendingEvidence = {};
   bool _loadedLocale = false;
 
   @override
@@ -78,7 +72,6 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
       controller.dispose();
     }
     _ordersSub?.cancel();
-    _ordersChannel?.sink.close();
     super.dispose();
   }
 
@@ -113,7 +106,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
             _servicePartial = '';
           });
         }
-    },
+      },
     );
   }
 
@@ -122,10 +115,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
       tween: Tween<double>(begin: 0.4, end: 1),
       duration: const Duration(milliseconds: 900),
       builder: (context, value, child) {
-        return Opacity(
-          opacity: _listeningService ? value : 0,
-          child: child,
-        );
+        return Opacity(opacity: _listeningService ? value : 0, child: child);
       },
       onEnd: () {
         if (mounted && _listeningService) {
@@ -181,10 +171,8 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final token = Provider.of<UserProvider>(context).token;
-    if (token != null && token != _lastToken) {
-      _lastToken = token;
-      _connectRealtime(token);
+    if (_execution != null) {
+      _connectRealtime(_execution!.maintenanceOrderId);
     }
     if (!_loadedLocale) {
       _loadedLocale = true;
@@ -212,27 +200,21 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
     setState(() => _speechAvailable = available);
   }
 
-  void _connectRealtime(String token) {
+  void _connectRealtime(String orderId) async {
     _ordersSub?.cancel();
-    _ordersChannel?.sink.close();
-    final url = '${ApiService.wsBaseUrl}/ws/orders?token=$token';
-    _ordersChannel = IOWebSocketChannel.connect(Uri.parse(url));
-    _ordersSub = _ordersChannel!.stream.listen((event) {
-      try {
-        final data = jsonDecode(event);
-        if (data is Map &&
-            _execution != null &&
-            OrderEventUtils.isOrderEvent(
-              data,
-              orderId: _execution!.maintenanceOrderId,
-            )) {
-          final status = OrderEventUtils.extractOrderStatus(data);
-          if (status == 'FINALIZADA' && mounted) {
+    final companyRef = await FirestoreHelper.companyRef();
+    _ordersSub = companyRef
+        .collection('serviceOrders')
+        .doc(orderId)
+        .snapshots()
+        .listen((split) {
+          if (!split.exists) return;
+          final data = split.data() as Map<String, dynamic>;
+          final status = data['status'] as String?;
+          if (status == 'FINALIZADA' && mounted && !_isFinalized) {
             setState(() => _isFinalized = true);
           }
-        }
-      } catch (_) {}
-    });
+        });
   }
 
   @override
@@ -251,9 +233,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
     final title = _executionTitle();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Column(
@@ -310,7 +290,10 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
                   color: AppColors.primary.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
+                child: const Icon(
+                  Icons.qr_code_scanner,
+                  color: AppColors.primary,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -336,7 +319,6 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
           ],
           TextField(
             controller: _orderIdController,
-            keyboardType: TextInputType.number,
             decoration: const InputDecoration(
               labelText: 'Order ID',
               hintText: 'Ex: 123',
@@ -518,9 +500,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
               children: [
                 OutlinedButton.icon(
                   onPressed: _speechAvailable ? _toggleServiceDictation : null,
-                  icon: Icon(
-                    _listeningService ? Icons.mic : Icons.mic_none,
-                  ),
+                  icon: Icon(_listeningService ? Icons.mic : Icons.mic_none),
                   label: Text(
                     _listeningService
                         ? (l10n?.listening ?? 'Ouvindo...')
@@ -742,14 +722,8 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
   }
 
   Future<void> _startExecution() async {
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token == null) {
-      _showSnack('User not authenticated');
-      return;
-    }
-
-    final orderId = int.tryParse(_orderIdController.text);
-    if (orderId == null) {
+    final orderId = _orderIdController.text.trim();
+    if (orderId.isEmpty) {
       _showSnack('Provide order id');
       return;
     }
@@ -762,8 +736,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
     try {
       final position = await _getPosition();
       final deviceId = await DeviceService.getDeviceId();
-      final response = await ExecutionService.startExecution(
-        token: token,
+      final response = await FirestoreExecutionService.startExecution(
         maintenanceOrderId: orderId,
         qrCodePayload: _qrPayload,
         deviceId: deviceId,
@@ -771,6 +744,8 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
         longitude: position.longitude,
         accuracy: position.accuracy,
       );
+
+      _connectRealtime(response.maintenanceOrderId);
 
       setState(() {
         _execution = response;
@@ -788,16 +763,17 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
 
   Future<void> _queueEvidence(ExecutionChecklistItem item) async {
     final picker = ImagePicker();
-    final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    final photo = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
     if (photo == null) return;
     final bytes = await photo.readAsBytes();
     setState(() {
       final list = _pendingEvidence.putIfAbsent(item.id, () => []);
-      list.add(LocalPhoto(
-        bytes: bytes,
-        name: photo.name,
-        mimeType: 'image/jpeg',
-      ));
+      list.add(
+        LocalPhoto(bytes: bytes, name: photo.name, mimeType: 'image/jpeg'),
+      );
     });
   }
 
@@ -808,6 +784,7 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => ExecutionReviewScreen(
+          orderId: _execution!.maintenanceOrderId,
           executionId: _execution!.executionId,
           items: items,
           itemStatus: _itemStatus,
@@ -830,31 +807,15 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
       MaterialPageRoute(
         builder: (_) => ExecutionReportPreviewScreen(
           executionId: _execution!.executionId,
+          orderId: _execution!.maintenanceOrderId,
         ),
       ),
     );
   }
 
   Future<void> _downloadReport() async {
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token == null || _execution == null) return;
-
-    try {
-      final bytes = await ExecutionService.downloadReport(
-        token: token,
-        executionId: _execution!.executionId,
-      );
-
-      await Share.shareXFiles([
-        XFile.fromData(
-          bytes,
-          name: 'execucao-${_execution!.executionId}.pdf',
-          mimeType: 'application/pdf',
-        ),
-      ]);
-    } catch (e) {
-      _showSnack(e.toString());
-    }
+    // Client-side PDF generation is handled in the preview screen
+    _viewReport();
   }
 
   Future<Position> _getPosition() async {
@@ -878,7 +839,9 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _executionTitle() {
@@ -886,7 +849,9 @@ class _ExecutionFlowScreenState extends State<ExecutionFlowScreen> {
     if (type == 'CONSERTO') return 'Repair Execution';
     if (type == 'OUTROS') return 'Service Execution';
     if (type == 'MANUTENCAO') return 'Maintenance Execution';
-    return _isMaintenanceOrder() ? 'Maintenance Execution' : 'Service Execution';
+    return _isMaintenanceOrder()
+        ? 'Maintenance Execution'
+        : 'Service Execution';
   }
 
   String _startCardTitle() {

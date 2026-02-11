@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
+
 class Order {
-  final int id;
+  final String id;
   final String status;
   final String priority;
   final String orderType;
@@ -33,39 +35,74 @@ class Order {
     this.dataFinalizacao,
   });
 
-  factory Order.fromJson(Map<String, dynamic> json) {
+  factory Order.fromMap(Map<String, dynamic> map, String docId) {
     return Order(
-      id: json['id'],
-      status: json['status'],
-      priority: json['prioridade'] ?? json['priority'] ?? 'MEDIA',
-      orderType: json['tipo'] ?? json['orderType'] ?? 'MANUTENCAO',
-      problemDescription: json['problemDescription'],
-      equipmentBrand: json['equipmentBrand'],
-      equipmentModel: json['equipmentModel'],
-      equipamento: Equipamento.fromJson(json['equipamento'] ?? {}),
-      checklist: Checklist.fromJson(json['checklist'] ?? {}),
-      cliente:
-          json['cliente'] != null ? Cliente.fromJson(json['cliente']) : null,
-      criador:
-          json['criador'] != null ? UserSummary.fromJson(json['criador']) : null,
-      responsavel: json['responsavel'] != null
-          ? UserSummary.fromJson(json['responsavel'])
+      id: docId,
+      status: map['status'] ?? 'ABERTA',
+      priority: map['prioridade'] ?? map['priority'] ?? 'MEDIA',
+      orderType: map['tipo'] ?? map['orderType'] ?? 'MANUTENCAO',
+      problemDescription: map['problemDescription'],
+      equipmentBrand: map['equipmentBrand'],
+      equipmentModel: map['equipmentModel'],
+      equipamento: Equipamento.fromMap(
+        map['equipamento'] ?? {},
+        map['equipamentoId'] ?? '',
+      ),
+      checklist: Checklist.fromMap(
+        map['checklist'] ?? {},
+        map['checklistId'] ?? '',
+      ),
+      cliente: map['cliente'] != null
+          ? Cliente.fromMap(map['cliente'], map['clienteId'] ?? '')
           : null,
-      dataPrevista: _parseDate(json['dataPrevista']),
-      dataCriacao: _parseDate(json['dataCriacao']),
-      dataFinalizacao: _parseDate(json['dataFinalizacao']),
+      criador: map['criador'] != null
+          ? UserSummary.fromMap(map['criador'])
+          : null,
+      responsavel: map['responsavel'] != null
+          ? UserSummary.fromMap(map['responsavel'])
+          : null,
+      dataPrevista: _parseTimestamp(map['dataPrevista']),
+      dataCriacao: _parseTimestamp(map['dataCriacao']),
+      dataFinalizacao: _parseTimestamp(map['dataFinalizacao']),
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'status': status,
+      'prioridade': priority,
+      'tipo': orderType,
+      if (problemDescription != null) 'problemDescription': problemDescription,
+      if (equipmentBrand != null) 'equipmentBrand': equipmentBrand,
+      if (equipmentModel != null) 'equipmentModel': equipmentModel,
+      'equipamento': equipamento.toMap(),
+      'equipamentoId': equipamento.id,
+      'checklist': checklist.toMap(),
+      'checklistId': checklist.id,
+      if (cliente != null) 'cliente': cliente!.toMap(),
+      if (cliente != null) 'clienteId': cliente!.id,
+      if (criador != null) 'criador': criador!.toMap(),
+      if (responsavel != null) 'responsavel': responsavel!.toMap(),
+      if (dataPrevista != null)
+        'dataPrevista': Timestamp.fromDate(dataPrevista!),
+      'dataCriacao': dataCriacao != null
+          ? Timestamp.fromDate(dataCriacao!)
+          : FieldValue.serverTimestamp(),
+      if (dataFinalizacao != null)
+        'dataFinalizacao': Timestamp.fromDate(dataFinalizacao!),
+    };
   }
 }
 
 class Equipamento {
-  final int id;
+  final String id;
   final String nome;
   final String codigo;
   final String qrCode;
   final String? localizacao;
   final double? latitude;
   final double? longitude;
+  final String? imageUrl;
   final Cliente? cliente;
 
   Equipamento({
@@ -76,26 +113,43 @@ class Equipamento {
     this.localizacao,
     this.latitude,
     this.longitude,
+    this.imageUrl,
     this.cliente,
   });
 
-  factory Equipamento.fromJson(Map<String, dynamic> json) {
+  factory Equipamento.fromMap(Map<String, dynamic> map, String docId) {
     return Equipamento(
-      id: json['id'] ?? 0,
-      nome: json['nome'] ?? '',
-      codigo: json['codigo'] ?? '',
-      qrCode: json['qrCode'] ?? '',
-      localizacao: json['localizacao'],
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
-      cliente:
-          json['cliente'] != null ? Cliente.fromJson(json['cliente']) : null,
+      id: docId.isNotEmpty ? docId : (map['id']?.toString() ?? ''),
+      nome: map['nome'] ?? '',
+      codigo: map['codigo'] ?? '',
+      qrCode: map['qrCode'] ?? '',
+      localizacao: map['localizacao'],
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
+      imageUrl: map['imageUrl'],
+      cliente: map['cliente'] != null
+          ? Cliente.fromMap(map['cliente'], map['clienteId'] ?? '')
+          : null,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'nome': nome,
+      'codigo': codigo,
+      'qrCode': qrCode,
+      if (localizacao != null) 'localizacao': localizacao,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (cliente != null) 'cliente': cliente!.toMap(),
+      if (cliente != null) 'clienteId': cliente!.id,
+    };
   }
 }
 
 class Checklist {
-  final int id;
+  final String id;
   final String nome;
   final List<ChecklistItem> itens;
   final String? descricao;
@@ -111,24 +165,33 @@ class Checklist {
     this.ativo,
   });
 
-  factory Checklist.fromJson(Map<String, dynamic> json) {
-    var list = (json['itens'] ?? []) as List;
-    List<ChecklistItem> itemsList = list
-        .map((i) => ChecklistItem.fromJson(i))
-        .toList();
+  factory Checklist.fromMap(Map<String, dynamic> map, String docId) {
+    final list = (map['itens'] ?? []) as List;
     return Checklist(
-      id: json['id'] ?? 0,
-      nome: json['nome'] ?? '',
-      itens: itemsList,
-      descricao: json['descricao'],
-      versao: json['versao'],
-      ativo: json['ativo'],
+      id: docId.isNotEmpty ? docId : (map['id']?.toString() ?? ''),
+      nome: map['nome'] ?? '',
+      itens: list
+          .map((i) => ChecklistItem.fromMap(i as Map<String, dynamic>))
+          .toList(),
+      descricao: map['descricao'],
+      versao: map['versao'],
+      ativo: map['ativo'],
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'nome': nome,
+      'itens': itens.map((i) => i.toMap()).toList(),
+      if (descricao != null) 'descricao': descricao,
+      if (versao != null) 'versao': versao,
+      'ativo': ativo ?? true,
+    };
   }
 }
 
 class ChecklistItem {
-  final int id;
+  final String id;
   final String descricao;
   final bool obrigatorioFoto;
   final bool critico;
@@ -140,13 +203,22 @@ class ChecklistItem {
     required this.critico,
   });
 
-  factory ChecklistItem.fromJson(Map<String, dynamic> json) {
+  factory ChecklistItem.fromMap(Map<String, dynamic> map) {
     return ChecklistItem(
-      id: json['id'],
-      descricao: json['descricao'],
-      obrigatorioFoto: json['obrigatorioFoto'] ?? false,
-      critico: json['critico'] ?? false,
+      id: map['id']?.toString() ?? '',
+      descricao: map['descricao'] ?? '',
+      obrigatorioFoto: map['obrigatorioFoto'] ?? false,
+      critico: map['critico'] ?? false,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'descricao': descricao,
+      'obrigatorioFoto': obrigatorioFoto,
+      'critico': critico,
+    };
   }
 }
 
@@ -155,64 +227,121 @@ class Cliente {
   final String nome;
   final String? email;
   final String? tipo;
+  final String? documento;
+  final String? telefone;
   final String? cidade;
   final String? estado;
   final String? rua;
   final String? numero;
   final String? bairro;
+  final String? cep;
+  final String? complemento;
+  final String? nomeContato;
+  final String? cargoContato;
+  final String? notasInternas;
+  final double? latitude;
+  final double? longitude;
+  final bool ativo;
 
   Cliente({
     required this.id,
     required this.nome,
     this.email,
     this.tipo,
+    this.documento,
+    this.telefone,
     this.cidade,
     this.estado,
     this.rua,
     this.numero,
     this.bairro,
+    this.cep,
+    this.complemento,
+    this.nomeContato,
+    this.cargoContato,
+    this.notasInternas,
+    this.latitude,
+    this.longitude,
+    this.ativo = true,
   });
 
-  factory Cliente.fromJson(Map<String, dynamic> json) {
+  factory Cliente.fromMap(Map<String, dynamic> map, String docId) {
     return Cliente(
-      id: json['id']?.toString() ?? '',
-      nome: json['nome'] ?? '',
-      email: json['email'],
-      tipo: json['tipo'],
-      cidade: json['cidade'],
-      estado: json['estado'],
-      rua: json['rua'],
-      numero: json['numero'],
-      bairro: json['bairro'],
+      id: docId.isNotEmpty ? docId : (map['id']?.toString() ?? ''),
+      nome: map['nome'] ?? '',
+      email: map['email'],
+      tipo: map['tipo'],
+      documento: map['documento'],
+      telefone: map['telefone'],
+      cidade: map['cidade'],
+      estado: map['estado'],
+      rua: map['rua'],
+      numero: map['numero'],
+      bairro: map['bairro'],
+      cep: map['cep'],
+      complemento: map['complemento'],
+      nomeContato: map['nomeContato'],
+      cargoContato: map['cargoContato'],
+      notasInternas: map['notasInternas'],
+      latitude: (map['latitude'] as num?)?.toDouble(),
+      longitude: (map['longitude'] as num?)?.toDouble(),
+      ativo: map['ativo'] ?? true,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'nome': nome,
+      if (email != null) 'email': email,
+      if (tipo != null) 'tipo': tipo,
+      if (documento != null) 'documento': documento,
+      if (telefone != null) 'telefone': telefone,
+      if (cidade != null) 'cidade': cidade,
+      if (estado != null) 'estado': estado,
+      if (rua != null) 'rua': rua,
+      if (numero != null) 'numero': numero,
+      if (bairro != null) 'bairro': bairro,
+      if (cep != null) 'cep': cep,
+      if (complemento != null) 'complemento': complemento,
+      if (nomeContato != null) 'nomeContato': nomeContato,
+      if (cargoContato != null) 'cargoContato': cargoContato,
+      if (notasInternas != null) 'notasInternas': notasInternas,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      'ativo': ativo,
+    };
   }
 }
 
 class UserSummary {
-  final int id;
+  final String id;
   final String name;
   final String? email;
 
-  UserSummary({
-    required this.id,
-    required this.name,
-    this.email,
-  });
+  UserSummary({required this.id, required this.name, this.email});
 
-  factory UserSummary.fromJson(Map<String, dynamic> json) {
+  factory UserSummary.fromMap(Map<String, dynamic> map) {
     return UserSummary(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      email: json['email'],
+      id: map['id']?.toString() ?? '',
+      name: map['name'] ?? '',
+      email: map['email'],
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'id': id, 'name': name, if (email != null) 'email': email};
   }
 }
 
-DateTime? _parseDate(dynamic value) {
+DateTime? _parseTimestamp(dynamic value) {
   if (value == null) return null;
-  try {
-    return DateTime.parse(value);
-  } catch (_) {
-    return null;
+  if (value is Timestamp) return value.toDate();
+  if (value is String) {
+    try {
+      return DateTime.parse(value);
+    } catch (_) {
+      return null;
+    }
   }
+  return null;
 }

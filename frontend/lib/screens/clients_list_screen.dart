@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import 'create_client_screen.dart';
-import '../providers/user_provider.dart';
-import '../services/cliente_service.dart';
+import '../services/firestore_client_service.dart';
 
 class ClientsListScreen extends StatefulWidget {
   const ClientsListScreen({super.key});
@@ -19,7 +17,6 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
   bool _isLoading = false;
   String? _error;
   List<Map<String, dynamic>> _clients = [];
-  String? _lastToken;
 
   @override
   void dispose() {
@@ -36,11 +33,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token != null && token != _lastToken) {
-      _lastToken = token;
-      _loadClients();
-    }
+    // No token check needed
   }
 
   Future<void> _loadClients() async {
@@ -49,11 +42,9 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
       _error = null;
     });
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) return;
-      final list = await ClienteService.listarClientes(token: token);
+      final list = await FirestoreClientService.getAll();
       setState(() {
-        _clients = list;
+        _clients = list.map((c) => c.toMap()).toList();
       });
     } catch (e) {
       setState(() {
@@ -70,24 +61,28 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final border = isDark ? AppColors.borderDefaultDark : AppColors.borderLight;
-    final clients = _clients.where((c) {
-      final type = (c['tipo'] ?? '').toString().toLowerCase();
-      if (_selectedFilter == 'all') return true;
-      return type == _selectedFilter;
-    }).where((c) {
-      final query = _searchController.text.toLowerCase();
-      if (query.isEmpty) return true;
-      final name = (c['nome'] ?? '').toString().toLowerCase();
-      final email = (c['email'] ?? '').toString().toLowerCase();
-      final documento = (c['documento'] ?? '').toString().toLowerCase();
-      return name.contains(query) ||
-          email.contains(query) ||
-          documento.contains(query);
-    }).toList();
+    final clients = _clients
+        .where((c) {
+          final type = (c['tipo'] ?? '').toString().toLowerCase();
+          if (_selectedFilter == 'all') return true;
+          return type == _selectedFilter;
+        })
+        .where((c) {
+          final query = _searchController.text.toLowerCase();
+          if (query.isEmpty) return true;
+          final name = (c['nome'] ?? '').toString().toLowerCase();
+          final email = (c['email'] ?? '').toString().toLowerCase();
+          final documento = (c['documento'] ?? '').toString().toLowerCase();
+          return name.contains(query) ||
+              email.contains(query) ||
+              documento.contains(query);
+        })
+        .toList();
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDarkTheme
+          : AppColors.backgroundLight,
       appBar: AppBar(
         title: const Text('Clients'),
         actions: [
@@ -95,9 +90,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const CreateClientScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const CreateClientScreen()),
               ).then((result) {
                 if (result == true) _loadClients();
               });
@@ -165,9 +158,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const CreateClientScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const CreateClientScreen()),
           ).then((result) {
             if (result == true) _loadClients();
           });
@@ -238,7 +229,6 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
       ),
     );
   }
-
 }
 
 class _ClientCard extends StatelessWidget {

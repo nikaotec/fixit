@@ -3,10 +3,10 @@ import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../providers/user_provider.dart';
-import '../services/equipment_service.dart';
-import '../services/checklist_service.dart';
-import '../services/order_service.dart';
-import '../services/technician_service.dart';
+import '../services/firestore_equipment_service.dart';
+import '../services/firestore_checklist_service.dart';
+import '../services/firestore_order_service.dart';
+import '../services/firestore_technician_service.dart';
 import '../services/speech_service.dart';
 import '../services/voice_preferences.dart';
 import '../models/order.dart';
@@ -24,16 +24,15 @@ class CreateServiceOrderScreen extends StatefulWidget {
 class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
   bool _isLoading = false;
   bool _isSaving = false;
-  List<Map<String, dynamic>> _equipments = [];
+  List<Equipamento> _equipments = [];
   List<Checklist> _checklists = [];
   List<Technician> _technicians = [];
-  Map<String, dynamic>? _selectedEquipment;
+  Equipamento? _selectedEquipment;
   Checklist? _selectedChecklist;
   String _priority = 'MEDIA';
   String _orderType = 'MANUTENCAO';
   DateTime? _scheduledFor;
   String? _selectedTechnicianId;
-  String? _lastToken;
   final TextEditingController _problemDescriptionController =
       TextEditingController();
   final TextEditingController _brandController = TextEditingController();
@@ -109,36 +108,75 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
             _problemPartial = '';
           });
         }
-    },
+      },
     );
   }
 
-  Widget _buildListeningBadge(bool isDark, String label) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0.4, end: 1),
-      duration: const Duration(milliseconds: 900),
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: _listeningProblem ? value : 0,
-          child: child,
-        );
-      },
-      onEnd: () {
-        if (mounted && _listeningProblem) {
-          setState(() {});
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.slate800 : AppColors.slate100,
-          borderRadius: BorderRadius.circular(20),
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 12),
+      child: Text(
+        title.toUpperCase(),
+        style: AppTypography.overline.copyWith(
+          color: isDark ? AppColors.slate400 : AppColors.slate500,
         ),
-        child: Text(
-          label,
-          style: AppTypography.captionSmall.copyWith(
-            color: isDark ? AppColors.slate200 : AppColors.slate700,
-            fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Widget _buildSelectionCard<T>({
+    required T value,
+    required T selectedValue,
+    required String label,
+    required IconData icon,
+    required Function(T) onSelected,
+    required bool isDark,
+  }) {
+    final isSelected = value == selectedValue;
+    final color = isSelected
+        ? AppColors.primary
+        : (isDark ? AppColors.surfaceDarkTheme : Colors.white);
+    final textColor = isSelected
+        ? Colors.white
+        : (isDark ? AppColors.slate300 : AppColors.slate700);
+    final borderColor = isSelected
+        ? AppColors.primary
+        : (isDark ? AppColors.borderDefaultDark : AppColors.borderLight);
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onSelected(value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 2),
+            boxShadow: !isSelected && !isDark
+                ? [
+                    BoxShadow(
+                      color: AppColors.shadow.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: isSelected ? Colors.white : AppColors.primary),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: AppTypography.captionSmall.copyWith(
+                  color: textColor,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -157,14 +195,8 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
         VoicePreferences.setLocale(value);
       },
       itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'pt_BR',
-          child: Text(l10n.portugueseBrazil),
-        ),
-        PopupMenuItem(
-          value: 'en_US',
-          child: Text(l10n.englishUS),
-        ),
+        PopupMenuItem(value: 'pt_BR', child: Text(l10n.portugueseBrazil)),
+        PopupMenuItem(value: 'en_US', child: Text(l10n.englishUS)),
       ],
       child: OutlinedButton.icon(
         onPressed: null,
@@ -176,31 +208,38 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final token = Provider.of<UserProvider>(context).token;
-    if (token != null && token != _lastToken) {
-      _lastToken = token;
-      _loadData();
-    }
+    // No token check needed for Firestore updates usually, unless we want to reload on auth change
+    // For now, _loadData is called in initState. we can keep it simple.
   }
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) return;
-      final equipments = await EquipmentService.getAll(token: token);
-      final checklists = await ChecklistService.getAll(token: token);
-      final technicians = await TechnicianService.getFavoriteDetails(token: token);
+      final equipments = await FirestoreEquipmentService.getAll();
+      final checklists = await FirestoreChecklistService.getAll();
+      final technicians = await FirestoreTechnicianService.getAll();
+      if (!mounted) return;
+      final favoriteIds = await FirestoreTechnicianService.loadFavoriteIds();
       setState(() {
         _equipments = equipments;
         _checklists = checklists;
         _technicians = technicians;
+        for (var tech in _technicians) {
+          tech.isFavorite = favoriteIds.contains(tech.id);
+        }
+        _technicians.sort((a, b) {
+          if (a.isFavorite && !b.isFavorite) return -1;
+          if (!a.isFavorite && b.isFavorite) return 1;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
       });
     } catch (e) {
       if (!mounted) return;
@@ -221,48 +260,42 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
     final needsChecklist = _orderType == 'MANUTENCAO';
     if ((needsChecklist && _selectedEquipment == null) ||
         (needsChecklist && _selectedChecklist == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.selectEquipmentChecklist)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.selectEquipmentChecklist)));
       return;
     }
-    if (!needsChecklist &&
-        _problemDescriptionController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.problemDescriptionRequired)),
-      );
+    if (!needsChecklist && _problemDescriptionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.problemDescriptionRequired)));
       return;
     }
     if (!needsChecklist && _brandController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.brandRequired)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.brandRequired)));
       return;
     }
     if (!needsChecklist && _modelController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.modelRequired)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.modelRequired)));
       return;
     }
     setState(() => _isSaving = true);
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) {
-        throw Exception(l10n.userNotAuthenticated);
-      }
-      final equipmentId = _selectedEquipment != null
-          ? (_selectedEquipment!['id'] as num).toInt()
-          : null;
-      final cliente =
-          _selectedEquipment != null ? _selectedEquipment!['cliente'] : null;
-      final clienteId = cliente != null ? cliente['id']?.toString() : null;
+      final equipmentId = _selectedEquipment?.id;
+      final clienteId = _selectedEquipment?.cliente?.id;
       final responsavelId = _selectedTechnicianId == 'none'
           ? null
           : _selectedTechnicianId;
 
-      await OrderService.create(
-        token: token,
+      final selectedTech = responsavelId != null
+          ? _technicians.where((t) => t.id == responsavelId).firstOrNull
+          : null;
+
+      await FirestoreOrderService.create(
         equipamentoId: equipmentId,
         checklistId: needsChecklist ? _selectedChecklist!.id : null,
         clienteId: clienteId,
@@ -273,10 +306,14 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
         problemDescription: needsChecklist
             ? null
             : _problemDescriptionController.text,
-        equipmentBrand:
-            needsChecklist ? null : _brandController.text,
-        equipmentModel:
-            needsChecklist ? null : _modelController.text,
+        equipmentBrand: needsChecklist ? null : _brandController.text,
+        equipmentModel: needsChecklist ? null : _modelController.text,
+        equipamentoData: _selectedEquipment?.toMap(),
+        checklistData: needsChecklist ? _selectedChecklist!.toMap() : null,
+        clienteData: _selectedEquipment?.cliente?.toMap(),
+        responsavelData: selectedTech != null
+            ? {'id': selectedTech.id, 'name': selectedTech.name}
+            : null,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -300,10 +337,7 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
           ? l10n.serverRejectedTechnician
           : l10n.errorCreatingOrder(raw);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: AppColors.danger,
-        ),
+        SnackBar(content: Text(message), backgroundColor: AppColors.danger),
       );
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -315,269 +349,432 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
     final needsChecklist = _orderType == 'MANUTENCAO';
+
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight,
-      appBar: AppBar(title: Text(l10n.createServiceOrderTitle)),
+      backgroundColor: isDark
+          ? AppColors.backgroundDarkTheme
+          : AppColors.backgroundLight,
+      appBar: AppBar(title: Text(l10n.createServiceOrderTitle), elevation: 0),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDarkTheme : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.borderDefaultDark
-                        : AppColors.borderLight,
-                  ),
-                  boxShadow: isDark
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: AppColors.shadow.withOpacity(0.08),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      l10n.orderDetailsHeading,
-                      style: AppTypography.headline3.copyWith(
-                        color: isDark ? Colors.white : AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _orderType,
-                      decoration: InputDecoration(
-                        labelText: l10n.orderTypeLabel,
-                      ),
-                      items: [
-                        DropdownMenuItem(
-                          value: 'MANUTENCAO',
-                          child: Text(l10n.orderTypeMaintenance),
-                        ),
-                        DropdownMenuItem(
-                          value: 'CONSERTO',
-                          child: Text(l10n.orderTypeRepair),
-                        ),
-                        DropdownMenuItem(
-                          value: 'OUTROS',
-                          child: Text(l10n.orderTypeOther),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() {
-                          _orderType = value;
-                          if (_orderType != 'MANUTENCAO') {
-                            _selectedChecklist = null;
-                            _selectedEquipment = null;
-                            _brandController.clear();
-                            _modelController.clear();
-                          }
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    if (needsChecklist) ...[
-                      DropdownButtonFormField<Map<String, dynamic>>(
-                        value: _selectedEquipment,
-                        decoration: InputDecoration(
-                          labelText: l10n.equipmentLabel,
-                        ),
-                        items: _equipments
-                            .map(
-                              (e) => DropdownMenuItem(
-                                value: e,
-                                child: Text(e['nome'] ?? l10n.equipmentLabel),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() => _selectedEquipment = value);
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    if (needsChecklist) ...[
-                      DropdownButtonFormField<Checklist>(
-                        value: _selectedChecklist,
-                        decoration: InputDecoration(
-                          labelText: l10n.checklistTitle,
-                        ),
-                        items: _checklists
-                            .map(
-                              (c) => DropdownMenuItem(
-                                value: c,
-                                child: Text(c.nome),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() => _selectedChecklist = value);
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                    ] else ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _problemDescriptionController,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          labelText: l10n.problemDescriptionLabel,
-                          hintText: l10n.problemDescriptionHint,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
+          : Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 120),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildSectionHeader(l10n.orderTypeLabel, isDark),
+                      Row(
                         children: [
-                          OutlinedButton.icon(
-                            onPressed:
-                                _speechAvailable ? _toggleProblemDictation : null,
-                            icon: Icon(
-                              _listeningProblem ? Icons.mic : Icons.mic_none,
-                            ),
-                            label: Text(
-                              _listeningProblem
-                                  ? l10n.listening
-                                  : l10n.voiceInput,
-                            ),
+                          _buildSelectionCard(
+                            value: 'MANUTENCAO',
+                            selectedValue: _orderType,
+                            label: l10n.orderTypeMaintenance,
+                            icon: Icons.build_circle_outlined,
+                            isDark: isDark,
+                            onSelected: (val) => setState(() {
+                              _orderType = val;
+                              _selectedChecklist = null;
+                              _selectedEquipment = null;
+                            }),
                           ),
-                          TextButton.icon(
-                            onPressed: _speechService.isListening
-                                ? () async {
-                                    await _speechService.stop();
-                                    if (mounted) {
-                                      setState(() {
-                                        _listeningProblem = false;
-                                        _problemPartial = '';
-                                      });
-                                    }
-                                  }
-                                : null,
-                            icon: const Icon(Icons.stop_circle_outlined),
-                            label: Text(l10n.stopListening),
+                          const SizedBox(width: 12),
+                          _buildSelectionCard(
+                            value: 'CONSERTO',
+                            selectedValue: _orderType,
+                            label: l10n.orderTypeRepair,
+                            icon: Icons.handyman_outlined,
+                            isDark: isDark,
+                            onSelected: (val) => setState(() {
+                              _orderType = val;
+                              _selectedChecklist = null;
+                              _selectedEquipment = null;
+                            }),
                           ),
-                          _buildLocaleSelector(l10n),
-                          if (_listeningProblem)
-                            _buildListeningBadge(isDark, l10n.listening),
+                          const SizedBox(width: 12),
+                          _buildSelectionCard(
+                            value: 'OUTROS',
+                            selectedValue: _orderType,
+                            label: l10n.orderTypeOther,
+                            icon: Icons.more_horiz_outlined,
+                            isDark: isDark,
+                            onSelected: (val) => setState(() {
+                              _orderType = val;
+                              _selectedChecklist = null;
+                              _selectedEquipment = null;
+                            }),
+                          ),
                         ],
                       ),
-                      if (!_speechAvailable) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          l10n.voiceNotAvailable,
-                          style: AppTypography.caption.copyWith(
-                            color: isDark
-                                ? AppColors.slate400
-                                : AppColors.slate600,
-                            fontStyle: FontStyle.italic,
+
+                      if (needsChecklist) ...[
+                        _buildSectionHeader(l10n.equipmentLabel, isDark),
+                        DropdownButtonFormField<Equipamento>(
+                          initialValue: _selectedEquipment,
+                          decoration: InputDecoration(
+                            hintText: l10n.equipmentLabel,
+                            prefixIcon: const Icon(Icons.qr_code_scanner),
+                          ),
+                          items: _equipments
+                              .map(
+                                (e) => DropdownMenuItem(
+                                  value: e,
+                                  child: Text(e.nome),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() => _selectedEquipment = value);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<Checklist>(
+                          value: _selectedChecklist,
+                          decoration: InputDecoration(
+                            hintText: l10n.checklistTitle,
+                            prefixIcon: const Icon(Icons.checklist),
+                          ),
+                          items: _checklists
+                              .map(
+                                (c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.nome),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() => _selectedChecklist = value);
+                          },
+                        ),
+                      ] else ...[
+                        _buildSectionHeader(l10n.orderDetailsHeading, isDark),
+                        TextField(
+                          controller: _problemDescriptionController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            labelText: l10n.problemDescriptionLabel,
+                            hintText: l10n.problemDescriptionHint,
                           ),
                         ),
-                      ],
-                      if (_problemPartial.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        Text(
-                          '${l10n.transcribing}: $_problemPartial',
-                          style: AppTypography.caption.copyWith(
-                            color: isDark
-                                ? AppColors.slate300
-                                : AppColors.slate600,
-                            fontStyle: FontStyle.italic,
-                          ),
+                        _buildVoiceInputRow(l10n, isDark),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _brandController,
+                                decoration: InputDecoration(
+                                  labelText: l10n.brandLabel,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextField(
+                                controller: _modelController,
+                                decoration: InputDecoration(
+                                  labelText: l10n.modelLabel,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _brandController,
-                        decoration: InputDecoration(
-                          labelText: l10n.brandLabel,
-                        ),
+
+                      _buildSectionHeader(l10n.priorityLabel, isDark),
+                      Row(
+                        children: [
+                          _buildSelectionCard(
+                            value: 'BAIXA',
+                            selectedValue: _priority,
+                            label: l10n.priorityLow,
+                            icon: Icons.keyboard_arrow_down,
+                            isDark: isDark,
+                            onSelected: (val) =>
+                                setState(() => _priority = val),
+                          ),
+                          const SizedBox(width: 12),
+                          _buildSelectionCard(
+                            value: 'MEDIA',
+                            selectedValue: _priority,
+                            label: l10n.priorityMedium,
+                            icon: Icons.remove,
+                            isDark: isDark,
+                            onSelected: (val) =>
+                                setState(() => _priority = val),
+                          ),
+                          const SizedBox(width: 12),
+                          _buildSelectionCard(
+                            value: 'ALTA',
+                            selectedValue: _priority,
+                            label: l10n.priorityHigh,
+                            icon: Icons.keyboard_arrow_up,
+                            isDark: isDark,
+                            onSelected: (val) =>
+                                setState(() => _priority = val),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _modelController,
-                        decoration: InputDecoration(
-                          labelText: l10n.modelLabel,
+
+                      _buildSectionHeader(l10n.responsibleTechnician, isDark),
+                      _buildTechnicianSelection(l10n, isDark),
+
+                      _buildSectionHeader(l10n.scheduledDate, isDark),
+                      InkWell(
+                        onTap: _pickDate,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.surfaceDarkTheme
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark
+                                  ? AppColors.borderDefaultDark
+                                  : AppColors.borderLight,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_month,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                _scheduledFor == null
+                                    ? l10n.selectDate
+                                    : _scheduledFor!
+                                          .toLocal()
+                                          .toString()
+                                          .substring(0, 16),
+                                style: AppTypography.bodyTextSmall.copyWith(
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.chevron_right,
+                                color: AppColors.slate400,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: _priority,
-                      decoration: InputDecoration(
-                        labelText: l10n.priorityLabel,
-                      ),
-                      items: [
-                        DropdownMenuItem(
-                          value: 'ALTA',
-                          child: Text(l10n.priorityHigh),
-                        ),
-                        DropdownMenuItem(
-                          value: 'MEDIA',
-                          child: Text(l10n.priorityMedium),
-                        ),
-                        DropdownMenuItem(
-                          value: 'BAIXA',
-                          child: Text(l10n.priorityLow),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() => _priority = value);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: _selectedTechnicianId,
-                      decoration: InputDecoration(
-                        labelText: l10n.responsibleTechnician,
-                      ),
-                      items: _buildTechnicianItems(),
-                      onChanged: (value) {
-                        setState(() => _selectedTechnicianId = value);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.scheduledDate),
-                      subtitle: Text(
-                        _scheduledFor == null
-                            ? l10n.selectDate
-                            : _scheduledFor!.toLocal().toString(),
-                        style: AppTypography.caption.copyWith(
-                          color:
-                              isDark ? AppColors.slate300 : AppColors.slate600,
-                        ),
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.calendar_today),
-                        onPressed: _pickDate,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _isSaving ? null : _saveOrder,
-                      child: Text(
-                        _isSaving ? l10n.saving : l10n.createOrder,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildBottomAction(l10n, isDark),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildVoiceInputRow(AppLocalizations l10n, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            FilterChip(
+              label: Text(_listeningProblem ? l10n.listening : l10n.voiceInput),
+              selected: _listeningProblem,
+              onSelected: _speechAvailable
+                  ? (_) => _toggleProblemDictation()
+                  : null,
+              avatar: Icon(
+                _listeningProblem ? Icons.mic : Icons.mic_none,
+                size: 18,
+                color: _listeningProblem ? Colors.white : AppColors.primary,
+              ),
+              selectedColor: AppColors.primary,
+              labelStyle: TextStyle(
+                color: _listeningProblem ? Colors.white : AppColors.primary,
               ),
             ),
+            _buildLocaleSelector(l10n),
+          ],
+        ),
+        if (!_speechAvailable) ...[
+          const SizedBox(height: 4),
+          Text(
+            l10n.voiceNotAvailable,
+            style: AppTypography.captionSmall.copyWith(
+              color: AppColors.danger,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+        if (_problemPartial.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            '${l10n.transcribing}: $_problemPartial',
+            style: AppTypography.captionSmall.copyWith(
+              color: isDark ? AppColors.slate400 : AppColors.slate500,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTechnicianSelection(AppLocalizations l10n, bool isDark) {
+    final userId = Provider.of<UserProvider>(context, listen: false).id;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_technicians.any((t) => t.isFavorite)) ...[
+          SizedBox(
+            height: 70,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                // Quick Assign to Me
+                _buildQuickTechAvatar(
+                  id: userId ?? 'me',
+                  name: l10n.meLabel,
+                  isSelected: _selectedTechnicianId == userId,
+                  isDark: isDark,
+                  onTap: () => setState(() => _selectedTechnicianId = userId),
+                ),
+                ..._technicians
+                    .where((t) => t.isFavorite && t.id != userId)
+                    .map(
+                      (tech) => _buildQuickTechAvatar(
+                        id: tech.id,
+                        name: tech.name,
+                        imageUrl: tech.avatarUrl,
+                        isSelected: _selectedTechnicianId == tech.id,
+                        isDark: isDark,
+                        onTap: () =>
+                            setState(() => _selectedTechnicianId = tech.id),
+                      ),
+                    ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        DropdownButtonFormField<String>(
+          initialValue: _selectedTechnicianId,
+          decoration: InputDecoration(
+            hintText: l10n.responsibleTechnician,
+            prefixIcon: const Icon(Icons.person_outline),
+          ),
+          items: _buildTechnicianItems(),
+          onChanged: (value) {
+            setState(() => _selectedTechnicianId = value);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickTechAvatar({
+    required String id,
+    required String name,
+    String? imageUrl,
+    required bool isSelected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 16),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: isDark
+                    ? AppColors.slate800
+                    : AppColors.slate200,
+                backgroundImage: imageUrl != null
+                    ? NetworkImage(imageUrl)
+                    : null,
+                child: imageUrl == null
+                    ? Text(
+                        name[0].toUpperCase(),
+                        style: TextStyle(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.slate500,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              name.split(' ')[0],
+              style: AppTypography.captionSmall.copyWith(
+                color: isSelected ? AppColors.primary : AppColors.slate500,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomAction(AppLocalizations l10n, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.backgroundDarkTheme : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            offset: const Offset(0, -4),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isSaving ? null : _saveOrder,
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size.fromHeight(56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: _isSaving
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(l10n.createOrder, style: AppTypography.button),
+      ),
     );
   }
 
@@ -591,17 +788,20 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
     );
     if (date == null) return;
     setState(() {
-      _scheduledFor = DateTime(date.year, date.month, date.day, now.hour, now.minute);
+      _scheduledFor = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        now.hour,
+        now.minute,
+      );
     });
   }
 
   List<DropdownMenuItem<String>> _buildTechnicianItems() {
     final l10n = AppLocalizations.of(context)!;
     final items = <DropdownMenuItem<String>>[
-      DropdownMenuItem(
-        value: 'none',
-        child: Text(l10n.doNotAssignNow),
-      ),
+      DropdownMenuItem(value: 'none', child: Text(l10n.doNotAssignNow)),
     ];
     final userId = Provider.of<UserProvider>(context, listen: false).id;
     final userName = Provider.of<UserProvider>(context, listen: false).name;
@@ -625,13 +825,10 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
     }
     for (final tech in _technicians) {
       if (tech.id == userId) continue;
-      final label = tech.role.isNotEmpty ? '${tech.name} • ${tech.role}' : tech.name;
-      items.add(
-        DropdownMenuItem(
-          value: tech.id,
-          child: Text(label),
-        ),
-      );
+      final label = tech.role.isNotEmpty
+          ? '${tech.name} • ${tech.role}'
+          : tech.name;
+      items.add(DropdownMenuItem(value: tech.id, child: Text(label)));
     }
     return items;
   }

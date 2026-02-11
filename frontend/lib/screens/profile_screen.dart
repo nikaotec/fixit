@@ -10,7 +10,6 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
-  @override
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
     final l10n = AppLocalizations.of(context)!;
@@ -96,12 +95,19 @@ class ProfileScreen extends StatelessWidget {
                         color: AppColors.primary.withOpacity(0.1),
                         width: 4,
                       ),
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                          "https://lh3.googleusercontent.com/aida-public/AB6AXuC6CfJqKrAQZ5XlMfsOyolciPsTtRyU-p9bOovhBHZFfXkLwRLFDan26dBG_XNce8JhzHqPGTCkXTseW5ZohsnyBMKegb0M0TXYNBQJeRWwTJl96y2j1nvW_vCa30BNaaMs85CpaKY1yQy_QhX1RhMcQ-8wsRt6A4Ktj0l17M5wqhxYUzzoJMZzTCUWATJ4w_J-wduGnu0-xC4TmStj6pvjfPkqhxtRn-kJhqgncCg_38F307lALusv3ZXAazr4U6-2TNJ2DzG94WM",
-                        ),
-                        fit: BoxFit.cover,
-                      ),
+                      image:
+                          userProvider.photoURL != null &&
+                              userProvider.photoURL!.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(userProvider.photoURL!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      color:
+                          userProvider.photoURL == null ||
+                              userProvider.photoURL!.isEmpty
+                          ? AppColors.primary.withOpacity(0.12)
+                          : null,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.05),
@@ -110,6 +116,21 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                    child:
+                        userProvider.photoURL == null ||
+                            userProvider.photoURL!.isEmpty
+                        ? Center(
+                            child: Text(
+                              (userProvider.name ?? 'U')
+                                  .substring(0, 1)
+                                  .toUpperCase(),
+                              style: AppTypography.headline1.copyWith(
+                                color: AppColors.primary,
+                                fontSize: 48,
+                              ),
+                            ),
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -121,14 +142,16 @@ class ProfileScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Manager + Technician',
-                    style: AppTypography.bodyText.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
+                  if (userProvider.role != null &&
+                      userProvider.role!.isNotEmpty)
+                    Text(
+                      userProvider.role!,
+                      style: AppTypography.bodyText.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
                   const SizedBox(height: 4),
                   Text(
                     userProvider.email ?? 'alex.rivera@servicedesk.com',
@@ -292,7 +315,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '© 2024 Global Service Solutions',
+                    '© 2025 Fixit',
                     style: AppTypography.captionSmall.copyWith(
                       color: textSecondaryColor,
                     ),
@@ -442,10 +465,7 @@ class ProfileScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final current = _languageOptions(l10n).firstWhere(
       (lang) => lang['code'] == userProvider.locale.languageCode,
-      orElse: () => {
-        'label': '${l10n.englishLabel} (US)',
-        'flag': '🇺🇸',
-      },
+      orElse: () => {'label': '${l10n.englishLabel} (US)', 'flag': '🇺🇸'},
     );
 
     return Row(

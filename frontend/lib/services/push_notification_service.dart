@@ -1,23 +1,19 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'api_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'local_notification_service.dart';
 
 class PushNotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static bool _initialized = false;
-  static String? _authToken;
 
   static Future<void> initialize() async {
     if (_initialized || kIsWeb) return;
     _initialized = true;
 
-    await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    await _messaging.requestPermission(alert: true, badge: true, sound: true);
     if (Platform.isIOS) {
       await _messaging.setForegroundNotificationPresentationOptions(
         alert: true,
@@ -38,52 +34,34 @@ class PushNotificationService {
     });
 
     _messaging.onTokenRefresh.listen((token) {
-      _sendToken(token);
+      _saveTokenToFirestore(token);
     });
 
-    if (_authToken != null) {
-      if (Platform.isAndroid) {
-        final token = await _messaging.getToken();
-        if (token != null) {
-          await _sendToken(token);
-        }
-      }
-      await _sendApnsToken();
+    // Initial token save
+    final token = await _messaging.getToken();
+    if (token != null) {
+      _saveTokenToFirestore(token);
     }
   }
 
+  // No longer needed as we use FirebaseAuth
   static Future<void> updateAuthToken(String? token) async {
-    _authToken = token;
-    if (_authToken == null || kIsWeb) return;
-    if (Platform.isAndroid) {
-      final fcmToken = await _messaging.getToken();
-      if (fcmToken != null) {
-        await _sendToken(fcmToken);
-      }
-    }
-    await _sendApnsToken();
+    // no-op, kept for compatibility if called from elsewhere until cleaned up
   }
 
-  static Future<void> _sendToken(String fcmToken) async {
-    final auth = _authToken;
-    if (auth == null) return;
-    try {
-      await ApiService.registerFcmToken(token: auth, fcmToken: fcmToken);
-    } catch (e) {
-      debugPrint('❌ Falha ao registrar FCM token: $e');
-    }
-  }
+  static Future<void> _saveTokenToFirestore(String token) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-  static Future<void> _sendApnsToken() async {
-    if (kIsWeb || !Platform.isIOS) return;
-    final auth = _authToken;
-    if (auth == null) return;
     try {
-      final apnsToken = await _messaging.getAPNSToken();
-      if (apnsToken == null || apnsToken.isEmpty) return;
-      await ApiService.registerApnsToken(token: auth, apnsToken: apnsToken);
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'fcmToken': token,
+        'updatedAt': FieldValue.serverTimestamp(),
+        if (user.displayName != null) 'name': user.displayName,
+        if (user.email != null) 'email': user.email,
+      }, SetOptions(merge: true));
     } catch (e) {
-      debugPrint('❌ Falha ao registrar APNS token: $e');
+      debugPrint('❌ Falha ao salvar FCM token no Firestore: $e');
     }
   }
 }

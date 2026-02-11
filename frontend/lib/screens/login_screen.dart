@@ -18,8 +18,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'tech@fixit.com');
-  final _passwordController = TextEditingController(text: 'tech123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _isGoogleLoading = false;
   bool _obscurePassword = true;
@@ -51,10 +51,11 @@ class _LoginScreenState extends State<LoginScreen> {
       debugPrint('✅ Login successful');
       context.go('/');
     } else {
-      const errorMessage = 'Login Failed';
+      final l10n = AppLocalizations.of(context)!;
+      final errorMessage = l10n.loginFailed;
       debugPrint('❌ Login error: $errorMessage');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(errorMessage),
           behavior: SnackBarBehavior.floating,
         ),
@@ -144,8 +145,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               horizontal: isSmallScreen ? 24 : 32,
                             ),
                             decoration: BoxDecoration(
-                              color:
-                                  isDark ? AppColors.surfaceDarkTheme : Colors.white,
+                              color: isDark
+                                  ? AppColors.surfaceDarkTheme
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isDark
@@ -156,7 +158,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? []
                                   : [
                                       BoxShadow(
-                                        color: AppColors.shadow.withOpacity(0.08),
+                                        color: AppColors.shadow.withOpacity(
+                                          0.08,
+                                        ),
                                         blurRadius: 16,
                                         offset: const Offset(0, 8),
                                       ),
@@ -259,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // Tagline
         Text(
-          'Professional maintenance and service\nmanagement for global teams.',
+          AppLocalizations.of(context)!.appTagline,
           style: AppTypography.bodyText.copyWith(
             color: isDark
                 ? AppColors.textSecondaryDark
@@ -287,7 +291,7 @@ class _LoginScreenState extends State<LoginScreen> {
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
           decoration: InputDecoration(
-            hintText: 'name@company.com',
+            hintText: l10n.emailHintLogin,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
@@ -295,10 +299,10 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter your email';
+              return l10n.emailRequired;
             }
             if (!value.contains('@')) {
-              return 'Please enter a valid email';
+              return l10n.emailInvalid;
             }
             return null;
           },
@@ -371,7 +375,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return 'Please enter your password';
+              return l10n.passwordRequired;
             }
             if (value.length < 6) {
               return l10n.passwordMin6;
@@ -414,6 +418,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildDivider(bool isDark) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         Expanded(
@@ -427,7 +432,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'OR',
+            l10n.orDivider.toUpperCase(),
             style: AppTypography.caption.copyWith(
               color: isDark
                   ? AppColors.textSecondaryDark
@@ -481,7 +486,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   _buildGoogleLogo(),
                   const SizedBox(width: 12),
                   Text(
-                    'Continue with Google',
+                    AppLocalizations.of(context)!.continueWithGoogle,
                     style: AppTypography.button.copyWith(
                       fontSize: 16,
                       color: isDark

@@ -15,7 +15,7 @@ class ChecklistScreen extends StatefulWidget {
 }
 
 class _ChecklistScreenState extends State<ChecklistScreen> {
-  final Map<int, bool> _answers = {};
+  final Map<String, bool> _answers = {};
   final SignatureController _signatureController = SignatureController(
     penStrokeWidth: 5,
     penColor: Colors.black,
@@ -87,8 +87,9 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color:
-                      isDark ? AppColors.borderDefaultDark : AppColors.borderLight,
+                  color: isDark
+                      ? AppColors.borderDefaultDark
+                      : AppColors.borderLight,
                 ),
                 boxShadow: isDark
                     ? []

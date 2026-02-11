@@ -1,17 +1,13 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:convert';
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../l10n/app_localizations.dart';
 import '../models/order.dart';
 import '../providers/user_provider.dart';
-import '../services/order_service.dart';
-import '../services/api_service.dart';
-import '../services/order_event_utils.dart';
+import '../services/firestore_order_service.dart';
 import 'order_details_screen.dart';
 import 'create_service_order_screen.dart';
 
@@ -30,17 +26,12 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
   bool _isLoading = false;
   String? _error;
   List<Order> _orders = [];
-  String? _lastToken;
-  WebSocketChannel? _ordersChannel;
   StreamSubscription? _ordersSub;
-  Timer? _pollTimer;
-  static const Duration _pollInterval = Duration(seconds: 30);
 
   @override
   void initState() {
     super.initState();
-    _loadOrders();
-    _updatePolling();
+    _subscribeOrders();
   }
 
   void refreshOrders() {
@@ -48,155 +39,43 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final token = Provider.of<UserProvider>(context).token;
-    if (token != null && token != _lastToken) {
-      _lastToken = token;
-      _connectRealtime(token);
-      _loadOrders();
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant ServiceOrdersScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isActive != widget.isActive) {
-      _updatePolling();
-      if (widget.isActive) {
-        _loadOrders(showLoading: false);
-      }
-    }
-  }
-
-  @override
   void dispose() {
-    _stopPolling();
     _ordersSub?.cancel();
-    _ordersChannel?.sink.close();
     super.dispose();
   }
 
-  void _updatePolling() {
-    if (widget.isActive) {
-      _startPolling();
-    } else {
-      _stopPolling();
-    }
-  }
-
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(_pollInterval, (_) {
-      if (!mounted || _isLoading) return;
-      _loadOrders(showLoading: false);
+  void _subscribeOrders() {
+    setState(() {
+      _isLoading = true;
+      _error = null;
     });
-  }
-
-  void _stopPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = null;
-  }
-
-  void _connectRealtime(String token) {
     _ordersSub?.cancel();
-    _ordersChannel?.sink.close();
-    final url = '${ApiService.wsBaseUrl}/ws/orders?token=$token';
-    _ordersChannel = IOWebSocketChannel.connect(Uri.parse(url));
-    _ordersSub = _ordersChannel!.stream.listen((event) {
-      try {
-        final data = jsonDecode(event);
-        if (data is Map && OrderEventUtils.isOrderEvent(data)) {
-          _handleOrderEvent(data);
-        }
-      } catch (_) {
-        // ignore malformed events
-      }
-    });
+    _ordersSub = FirestoreOrderService.streamAll().listen(
+      (orders) {
+        if (!mounted) return;
+        setState(() {
+          _orders = orders;
+          _isLoading = false;
+          _error = null;
+        });
+      },
+      onError: (e) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
+      },
+    );
   }
 
-  Future<void> _handleOrderEvent(Map data) async {
-    final orderId = OrderEventUtils.extractOrderId(data);
-    if (orderId == null) return;
-    if (OrderEventUtils.isDeleteEvent(data)) {
-      if (!mounted) return;
-      setState(() {
-        _orders.removeWhere((order) => order.id == orderId);
-      });
-      return;
-    }
-    final payload = OrderEventUtils.extractOrderPayload(data);
-    if (payload != null) {
-      final updated = Order.fromJson(payload);
-      _applyRealtimeOrder(updated);
-      return;
-    }
+  Future<void> _loadOrders() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) return;
-      final updated = await OrderService.getById(token: token, id: orderId);
-      _applyRealtimeOrder(updated);
-    } catch (e) {
-      _handleOrderFetchError(orderId, e);
-    }
-  }
-
-  void _applyRealtimeOrder(Order updated) {
-    final currentUserId =
-        int.tryParse(Provider.of<UserProvider>(context, listen: false).id ?? '');
-    if (_isOrderRelevant(updated, currentUserId)) {
-      _upsertOrder(updated);
-      return;
-    }
-    if (!mounted) return;
-    setState(() {
-      _orders.removeWhere((order) => order.id == updated.id);
-    });
-  }
-
-  void _handleOrderFetchError(int orderId, Object error) {
-    final raw = error.toString();
-    if (!raw.contains('401') &&
-        !raw.contains('403') &&
-        !raw.contains('404')) {
-      return;
-    }
-    if (!mounted) return;
-    setState(() {
-      _orders.removeWhere((order) => order.id == orderId);
-    });
-  }
-
-  bool _isOrderRelevant(Order order, int? currentUserId) {
-    if (currentUserId == null) return true;
-    final isCreator = order.criador?.id == currentUserId;
-    final isResponsible = order.responsavel?.id == currentUserId;
-    return isCreator || isResponsible;
-  }
-
-  void _upsertOrder(Order updated) {
-    if (!mounted) return;
-    setState(() {
-      final index = _orders.indexWhere((order) => order.id == updated.id);
-      if (index >= 0) {
-        _orders[index] = updated;
-      } else {
-        _orders.insert(0, updated);
-      }
-    });
-  }
-
-  Future<void> _loadOrders({bool showLoading = true}) async {
-    if (showLoading) {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-    }
-    try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) return;
-      final list = await OrderService.getAll(token: token);
+      final list = await FirestoreOrderService.getAll();
       if (!mounted) return;
       setState(() {
         _orders = list;
@@ -206,7 +85,7 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
       if (!mounted) return;
       setState(() => _error = e.toString());
     } finally {
-      if (showLoading && mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -214,10 +93,10 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
-    final currentUserId =
-        int.tryParse(Provider.of<UserProvider>(context).id ?? '');
-    final background =
-        isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight;
+    final currentUserId = Provider.of<UserProvider>(context).id;
+    final background = isDark
+        ? AppColors.backgroundDarkTheme
+        : AppColors.backgroundLight;
     final orders = _filteredOrders();
 
     return Scaffold(
@@ -249,9 +128,7 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const CreateServiceOrderScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const CreateServiceOrderScreen()),
           ).then((result) {
             if (result == true) _loadOrders();
           });
@@ -281,7 +158,7 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
     List<Order> orders,
     bool isDark,
     AppLocalizations l10n,
-    int? currentUserId,
+    String? currentUserId,
   ) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -334,7 +211,7 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
 
   String? _roleLabelForOrder(
     Order order,
-    int? currentUserId,
+    String? currentUserId,
     AppLocalizations l10n,
   ) {
     if (currentUserId == null) return null;
@@ -388,8 +265,7 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
                   : statusColor.withOpacity(isDark ? 0.7 : 0.9),
               fontWeight: FontWeight.w600,
             ),
-            onSelected: (_) =>
-                setState(() => _selectedFilter = item.value),
+            onSelected: (_) => setState(() => _selectedFilter = item.value),
             backgroundColor: isDark ? AppColors.slate800 : AppColors.slate100,
           );
         },
@@ -473,7 +349,6 @@ class ServiceOrdersScreenState extends State<ServiceOrdersScreen> {
             : AppColors.statusPendingText;
     }
   }
-
 }
 
 class _FilterItem {
@@ -507,7 +382,7 @@ class _OrderCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final status = statusLabel;
     final location = _buildLocation(order);
-    final dueIn = _formatDue(order.dataPrevista);
+    final dueIn = _formatDue(order.dataPrevista, context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -556,6 +431,30 @@ class _OrderCard extends StatelessWidget {
                 _StatusChip(status: status),
               ],
             ),
+            if (order.equipamento.nome.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.precision_manufacturing_outlined,
+                    size: 14,
+                    color: isDark ? AppColors.slate300 : AppColors.slate600,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      order.equipamento.nome,
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.slate300 : AppColors.slate600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
             Text(
               location,
@@ -623,14 +522,15 @@ class _OrderCard extends StatelessWidget {
     return parts.join(' • ');
   }
 
-  String _formatDue(DateTime? due) {
+  String _formatDue(DateTime? due, BuildContext context) {
     if (due == null) return noScheduleLabel;
     final now = DateTime.now();
     final diff = due.difference(now);
+    final l10n = AppLocalizations.of(context)!;
     if (diff.inMinutes < 0) return statusLabel;
-    if (diff.inHours < 1) return '${diff.inMinutes} min';
-    if (diff.inDays < 1) return '${diff.inHours} h';
-    return '${diff.inDays} dias';
+    if (diff.inHours < 1) return l10n.minutesAgo(diff.inMinutes);
+    if (diff.inDays < 1) return l10n.hoursAgo(diff.inHours);
+    return l10n.daysAgo(diff.inDays);
   }
 
   Widget _chip(String label, bool isDark) {
@@ -649,7 +549,6 @@ class _OrderCard extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _StatusChip extends StatelessWidget {
@@ -663,18 +562,18 @@ class _StatusChip extends StatelessWidget {
     Color text;
     final normalized = status.toLowerCase();
     if (normalized.contains('atras')) {
-        bg = AppColors.statusFailedBg;
-        text = AppColors.statusFailedText;
+      bg = AppColors.statusFailedBg;
+      text = AppColors.statusFailedText;
     } else if (normalized.contains('andamento')) {
-        bg = AppColors.statusInProgressBg;
-        text = AppColors.statusInProgressText;
+      bg = AppColors.statusInProgressBg;
+      text = AppColors.statusInProgressText;
     } else if (normalized.contains('conclu') ||
         normalized.contains('finaliz')) {
-        bg = AppColors.statusCompletedBg;
-        text = AppColors.statusCompletedText;
+      bg = AppColors.statusCompletedBg;
+      text = AppColors.statusCompletedText;
     } else {
-        bg = AppColors.statusPendingBg;
-        text = AppColors.statusPendingText;
+      bg = AppColors.statusPendingBg;
+      text = AppColors.statusPendingText;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

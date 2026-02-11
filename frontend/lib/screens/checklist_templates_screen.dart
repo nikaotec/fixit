@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import '../models/order.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../models/order.dart';
-import '../providers/user_provider.dart';
-import '../services/checklist_service.dart';
+import '../services/firestore_checklist_service.dart';
 import 'create_checklist_template_screen.dart';
 import 'checklist_template_details_screen.dart';
 
@@ -31,11 +30,7 @@ class _ChecklistTemplatesScreenState extends State<ChecklistTemplatesScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token != null && token != _lastToken) {
-      _lastToken = token;
-      _loadTemplates();
-    }
+    // No token check needed
   }
 
   Future<void> _loadTemplates() async {
@@ -44,9 +39,7 @@ class _ChecklistTemplatesScreenState extends State<ChecklistTemplatesScreen> {
       _error = null;
     });
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) return;
-      final list = await ChecklistService.getAll(token: token);
+      final list = await FirestoreChecklistService.getAll();
       setState(() => _templates = list);
     } catch (e) {
       setState(() => _error = e.toString());
@@ -62,8 +55,9 @@ class _ChecklistTemplatesScreenState extends State<ChecklistTemplatesScreen> {
     final border = isDark ? AppColors.borderDefaultDark : AppColors.borderLight;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDarkTheme
+          : AppColors.backgroundLight,
       appBar: AppBar(
         title: const Text('Checklist Templates'),
         actions: [
@@ -185,17 +179,15 @@ class _ChecklistTemplatesScreenState extends State<ChecklistTemplatesScreen> {
                       Text(
                         '${item.itens.length} items · v${item.versao ?? 1}',
                         style: AppTypography.caption.copyWith(
-                          color:
-                              isDark ? AppColors.slate300 : AppColors.slate600,
+                          color: isDark
+                              ? AppColors.slate300
+                              : AppColors.slate600,
                         ),
                       ),
                     ],
                   ),
                 ),
-                OutlinedButton(
-                  onPressed: () {},
-                  child: const Text('Use'),
-                ),
+                OutlinedButton(onPressed: () {}, child: const Text('Use')),
               ],
             ),
           ),

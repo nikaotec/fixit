@@ -2,29 +2,31 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
+
 import 'package:signature/signature.dart';
 import '../models/execution_models.dart';
 import '../models/local_photo.dart';
 import '../l10n/app_localizations.dart';
-import '../providers/user_provider.dart';
-import '../services/execution_service.dart';
+
+import '../services/firestore_execution_service.dart';
 import '../services/speech_service.dart';
 import '../services/voice_preferences.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
 class ExecutionReviewScreen extends StatefulWidget {
-  final int executionId;
+  final String orderId;
+  final String executionId;
   final List<ExecutionChecklistItem> items;
-  final Map<int, bool> itemStatus;
-  final Map<int, TextEditingController> observations;
-  final Map<int, List<LocalPhoto>> pendingEvidence;
+  final Map<String, bool> itemStatus;
+  final Map<String, TextEditingController> observations;
+  final Map<String, List<LocalPhoto>> pendingEvidence;
   final String orderType;
   final TextEditingController? serviceDescriptionController;
 
   const ExecutionReviewScreen({
     super.key,
+    required this.orderId,
     required this.executionId,
     required this.items,
     required this.itemStatus,
@@ -59,7 +61,8 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
   @override
   void initState() {
     super.initState();
-    _ownsFinalObservationController = widget.serviceDescriptionController == null;
+    _ownsFinalObservationController =
+        widget.serviceDescriptionController == null;
     _finalObservationController =
         widget.serviceDescriptionController ?? TextEditingController();
     _loadVoiceLocale();
@@ -110,7 +113,9 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
     await _speechService.start(
       localeId: _observationLocale,
       onResult: (words, isFinal) {
-        final prefix = _observationBaseText.isEmpty ? '' : '$_observationBaseText ';
+        final prefix = _observationBaseText.isEmpty
+            ? ''
+            : '$_observationBaseText ';
         _finalObservationController.text = '$prefix$words';
         _finalObservationController.selection = TextSelection.fromPosition(
           TextPosition(offset: _finalObservationController.text.length),
@@ -124,7 +129,7 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
             _observationPartial = '';
           });
         }
-    },
+      },
     );
   }
 
@@ -193,8 +198,9 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDarkTheme
+          : AppColors.backgroundLight,
       appBar: AppBar(title: const Text('Revisar execução')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -329,7 +335,9 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            isMaintenance ? 'Observação final' : 'Descrição do serviço executado',
+            isMaintenance
+                ? 'Observação final'
+                : 'Descrição do serviço executado',
             style: AppTypography.headline3.copyWith(
               color: isDark ? Colors.white : AppColors.textPrimary,
               fontWeight: FontWeight.w600,
@@ -352,10 +360,10 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               OutlinedButton.icon(
-                onPressed: _speechAvailable ? _toggleObservationDictation : null,
-                icon: Icon(
-                  _listeningObservation ? Icons.mic : Icons.mic_none,
-                ),
+                onPressed: _speechAvailable
+                    ? _toggleObservationDictation
+                    : null,
+                icon: Icon(_listeningObservation ? Icons.mic : Icons.mic_none),
                 label: Text(
                   _listeningObservation
                       ? (l10n?.listening ?? 'Ouvindo...')
@@ -379,10 +387,7 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
               ),
               _buildLocaleSelector(l10n),
               if (_listeningObservation)
-                _buildListeningBadge(
-                  isDark,
-                  l10n?.listening ?? 'Ouvindo...',
-                ),
+                _buildListeningBadge(isDark, l10n?.listening ?? 'Ouvindo...'),
             ],
           ),
           if (!_speechAvailable) ...[
@@ -560,7 +565,10 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
 
   Future<void> _pickExecutionPhoto() async {
     final picker = ImagePicker();
-    final photo = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
+    final photo = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
     if (photo == null) return;
     final bytes = await photo.readAsBytes();
     setState(() {
@@ -572,7 +580,10 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
 
   Future<void> _pickExecutionVideo() async {
     final picker = ImagePicker();
-    final video = await picker.pickVideo(source: ImageSource.camera, maxDuration: const Duration(seconds: 20));
+    final video = await picker.pickVideo(
+      source: ImageSource.camera,
+      maxDuration: const Duration(seconds: 20),
+    );
     if (video == null) return;
     final bytes = await video.readAsBytes();
     setState(() {
@@ -605,21 +616,15 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
       }
     }
 
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token == null) {
-      _showSnack('Usuário não autenticado');
-      return;
-    }
-
     setState(() => _isSaving = true);
     try {
       if (_isMaintenance()) {
-        final execItemIds = <int, int>{};
+        final execItemIds = <String, String>{};
         for (final item in widget.items) {
           final status = widget.itemStatus[item.id] ?? false;
           final observation = widget.observations[item.id]?.text;
-          final response = await ExecutionService.recordItem(
-            token: token,
+          final response = await FirestoreExecutionService.recordItem(
+            orderId: widget.orderId,
             executionId: widget.executionId,
             checklistItemId: item.id,
             status: status,
@@ -632,8 +637,9 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
           final execItemId = execItemIds[entry.key];
           if (execItemId == null) continue;
           for (final photo in entry.value) {
-            await ExecutionService.uploadEvidence(
-              token: token,
+            await FirestoreExecutionService.uploadEvidence(
+              orderId: widget.orderId,
+              executionId: widget.executionId,
               checklistExecutionItemId: execItemId,
               fileBytes: Uint8List.fromList(photo.bytes),
               fileName: photo.name,
@@ -644,8 +650,8 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
       }
 
       for (final photo in _executionPhotos) {
-        await ExecutionService.uploadExecutionPhoto(
-          token: token,
+        await FirestoreExecutionService.uploadExecutionPhoto(
+          orderId: widget.orderId,
           executionId: widget.executionId,
           fileBytes: Uint8List.fromList(photo.bytes),
           fileName: photo.name,
@@ -659,8 +665,8 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
         return;
       }
       final base64Signature = base64Encode(signatureBytes);
-      await ExecutionService.finalizeExecution(
-        token: token,
+      await FirestoreExecutionService.finalizeExecution(
+        orderId: widget.orderId,
         executionId: widget.executionId,
         signatureBase64: base64Signature,
         finalObservation: _finalObservationController.text.trim(),
@@ -696,6 +702,8 @@ class _ExecutionReviewScreenState extends State<ExecutionReviewScreen> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

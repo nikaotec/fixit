@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+
 import '../models/technician.dart';
-import '../providers/user_provider.dart';
-import '../services/technician_service.dart';
+import '../services/firestore_technician_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
@@ -37,8 +36,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background =
-        isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight;
+    final background = isDark
+        ? AppColors.backgroundDarkTheme
+        : AppColors.backgroundLight;
     final surface = isDark ? AppColors.surfaceDarkTheme : Colors.white;
     final border = isDark ? AppColors.borderDefaultDark : AppColors.borderLight;
     final text = isDark ? Colors.white : AppColors.textPrimary;
@@ -46,9 +46,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
 
     return Scaffold(
       backgroundColor: background,
-      appBar: AppBar(
-        title: const Text('Perfil do Técnico'),
-      ),
+      appBar: AppBar(title: const Text('Perfil do Técnico')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Column(
@@ -80,8 +78,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
                         : null,
                     child: _tech.avatarUrl == null
                         ? Text(
-                            _tech.name.isNotEmpty ? _tech.name[0]
-                                : '?',
+                            _tech.name.isNotEmpty ? _tech.name[0] : '?',
                             style: AppTypography.headline3.copyWith(
                               color: _tech.status.color,
                             ),
@@ -196,10 +193,7 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             value: _tech.rating > 0 ? _tech.rating.toStringAsFixed(1) : '-',
           ),
           _StatDivider(color: subtitle),
-          _StatItem(
-            label: 'Tarefas',
-            value: _tech.completed.toString(),
-          ),
+          _StatItem(label: 'Tarefas', value: _tech.completed.toString()),
         ],
       ),
     );
@@ -215,7 +209,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
       builder: (context) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final surface = isDark ? AppColors.surfaceDarkTheme : Colors.white;
-        final border = isDark ? AppColors.borderDefaultDark : AppColors.borderLight;
+        final border = isDark
+            ? AppColors.borderDefaultDark
+            : AppColors.borderLight;
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -224,7 +220,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
               border: Border.all(color: border),
             ),
             child: StatefulBuilder(
@@ -272,12 +270,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
   }
 
   Future<void> _submitReview(double rating, String comment) async {
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token == null) return;
     setState(() => _isSubmitting = true);
     try {
-      await TechnicianService.submitReview(
-        token: token,
+      await FirestoreTechnicianService.submitReview(
         technicianId: _tech.id,
         rating: rating,
         comment: comment,
@@ -290,9 +285,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro ao enviar avaliação')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Erro ao enviar avaliação')));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -300,11 +295,9 @@ class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
 
   Future<void> _refreshTechnician() async {
     if (_isRefreshing) return;
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token == null) return;
     setState(() => _isRefreshing = true);
     try {
-      final list = await TechnicianService.getAll(token: token);
+      final list = await FirestoreTechnicianService.getAll();
       final updated = list.firstWhere(
         (item) => item.id == _tech.id,
         orElse: () => _tech,
@@ -341,8 +334,12 @@ class _ActionButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: AppTypography.bodyText.copyWith(fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          textStyle: AppTypography.bodyText.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -354,11 +351,7 @@ class _StatItem extends StatelessWidget {
   final String value;
   final Color? valueColor;
 
-  const _StatItem({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _StatItem({required this.label, required this.value, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -368,7 +361,10 @@ class _StatItem extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(label, style: AppTypography.captionSmall.copyWith(color: subtitle)),
+          Text(
+            label,
+            style: AppTypography.captionSmall.copyWith(color: subtitle),
+          ),
           const SizedBox(height: 6),
           Text(
             value,
@@ -390,11 +386,7 @@ class _StatDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 36,
-      color: color.withOpacity(0.2),
-    );
+    return Container(width: 1, height: 36, color: color.withOpacity(0.2));
   }
 }
 
@@ -426,10 +418,7 @@ class _RatingRow extends StatelessWidget {
   final double rating;
   final ValueChanged<double> onChanged;
 
-  const _RatingRow({
-    required this.rating,
-    required this.onChanged,
-  });
+  const _RatingRow({required this.rating, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {

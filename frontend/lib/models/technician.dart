@@ -11,6 +11,7 @@ class Technician {
   final int completed;
   final int reviewCount;
   final String? avatarUrl;
+  bool isFavorite;
 
   Technician({
     required this.id,
@@ -22,20 +23,34 @@ class Technician {
     required this.completed,
     required this.reviewCount,
     this.avatarUrl,
+    this.isFavorite = false,
   });
 
-  factory Technician.fromJson(Map<String, dynamic> json) {
+  factory Technician.fromMap(Map<String, dynamic> map, String docId) {
     return Technician(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] ?? json['nome'] ?? 'Técnico',
-      role: _parseRole(json['role'] ?? json['cargo']),
-      email: json['email'],
-      status: _parseStatus(json['status'] ?? json['situacao']),
-      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      completed: (json['completed'] as num?)?.toInt() ?? 0,
-      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
-      avatarUrl: json['avatarUrl'] ?? json['avatar'],
+      id: docId.isNotEmpty ? docId : (map['id']?.toString() ?? ''),
+      name: map['name'] ?? map['nome'] ?? 'Técnico',
+      role: _parseRole(map['role'] ?? map['cargo']),
+      email: map['email'],
+      status: _parseStatus(map['status'] ?? map['situacao']),
+      rating: (map['rating'] as num?)?.toDouble() ?? 0.0,
+      completed: (map['completed'] as num?)?.toInt() ?? 0,
+      reviewCount: (map['reviewCount'] as num?)?.toInt() ?? 0,
+      avatarUrl: map['avatarUrl'] ?? map['avatar'],
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'role': role,
+      if (email != null) 'email': email,
+      'status': status.value,
+      'rating': rating,
+      'completed': completed,
+      'reviewCount': reviewCount,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl,
+    };
   }
 
   static String _parseRole(dynamic value) {

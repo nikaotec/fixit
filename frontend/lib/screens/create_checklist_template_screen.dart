@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../providers/user_provider.dart';
-import '../services/checklist_service.dart';
+import '../services/firestore_checklist_service.dart';
 import '../models/order.dart';
 
 class CreateChecklistTemplateScreen extends StatefulWidget {
@@ -46,10 +45,13 @@ class _CreateChecklistTemplateScreenState
     }
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDarkTheme
+          : AppColors.backgroundLight,
       appBar: AppBar(
-        title: Text(widget.checklist == null ? 'New Checklist' : 'Edit Checklist'),
+        title: Text(
+          widget.checklist == null ? 'New Checklist' : 'Edit Checklist',
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -59,7 +61,9 @@ class _CreateChecklistTemplateScreenState
             color: isDark ? AppColors.surfaceDarkTheme : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark ? AppColors.borderDefaultDark : AppColors.borderLight,
+              color: isDark
+                  ? AppColors.borderDefaultDark
+                  : AppColors.borderLight,
             ),
             boxShadow: isDark
                 ? []
@@ -97,18 +101,14 @@ class _CreateChecklistTemplateScreenState
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Template name',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Template name'),
                   validator: (val) =>
                       val == null || val.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _categoryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                  ),
+                  decoration: const InputDecoration(labelText: 'Category'),
                 ),
                 const SizedBox(height: 20),
                 _buildSectionTitle('Checklist Items', isDark),
@@ -123,9 +123,9 @@ class _CreateChecklistTemplateScreenState
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: _isSaving ? null : _saveTemplate,
-                  child: Text(_isSaving
-                      ? 'Saving...'
-                      : 'Save Checklist Template'),
+                  child: Text(
+                    _isSaving ? 'Saving...' : 'Save Checklist Template',
+                  ),
                 ),
               ],
             ),
@@ -156,9 +156,7 @@ class _CreateChecklistTemplateScreenState
               Expanded(
                 child: TextFormField(
                   controller: _itemControllers[i],
-                  decoration: InputDecoration(
-                    labelText: 'Item ${i + 1}',
-                  ),
+                  decoration: InputDecoration(labelText: 'Item ${i + 1}'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -232,10 +230,6 @@ class _CreateChecklistTemplateScreenState
   Future<void> _submitTemplate() async {
     setState(() => _isSaving = true);
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) {
-        throw Exception('Usuário não autenticado');
-      }
       final items = _itemControllers
           .map((c) => c.text.trim())
           .where((text) => text.isNotEmpty)
@@ -254,16 +248,15 @@ class _CreateChecklistTemplateScreenState
           'critico': _itemCritical.length > i ? _itemCritical[i] : false,
         });
       }
+
       if (widget.checklist == null) {
-        await ChecklistService.create(
-          token: token,
+        await FirestoreChecklistService.create(
           nome: _titleController.text.trim(),
           descricao: _categoryController.text.trim(),
           itens: payload,
         );
       } else {
-        await ChecklistService.update(
-          token: token,
+        await FirestoreChecklistService.update(
           id: widget.checklist!.id,
           nome: _titleController.text.trim(),
           descricao: _categoryController.text.trim(),
@@ -273,9 +266,11 @@ class _CreateChecklistTemplateScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(widget.checklist == null
-              ? 'Checklist template saved'
-              : 'Checklist template updated'),
+          content: Text(
+            widget.checklist == null
+                ? 'Checklist template saved'
+                : 'Checklist template updated',
+          ),
           backgroundColor: AppColors.success,
         ),
       );

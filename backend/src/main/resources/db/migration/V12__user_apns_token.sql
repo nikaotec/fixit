@@ -1,2 +1,0 @@
-ALTER TABLE IF EXISTS users
-    ADD COLUMN IF NOT EXISTS apns_token TEXT;

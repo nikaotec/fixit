@@ -7,16 +7,12 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../l10n/app_localizations.dart';
 import '../models/order.dart';
+import '../services/firestore_order_service.dart';
 import '../providers/user_provider.dart';
-import '../services/order_service.dart';
-import '../services/api_service.dart';
-import '../services/order_event_utils.dart';
 import 'maintenance_execution_entry_screen.dart';
 import 'execution_flow_screen.dart';
 
@@ -34,8 +30,6 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   bool _isGeocoding = false;
   String? _geoError;
   late Order _order;
-  String? _lastToken;
-  WebSocketChannel? _ordersChannel;
   StreamSubscription? _ordersSub;
 
   @override
@@ -57,78 +51,40 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final token = Provider.of<UserProvider>(context).token;
-    if (token != null && token != _lastToken) {
-      _lastToken = token;
-      _connectRealtime(token);
-      _loadOrder();
-    }
+    _connectRealtime();
   }
 
   @override
   void dispose() {
     _ordersSub?.cancel();
-    _ordersChannel?.sink.close();
     super.dispose();
   }
 
-  Future<void> _loadOrder() async {
-    try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) return;
-      final updated = await OrderService.getById(token: token, id: _order.id);
-      if (!mounted) return;
-      setState(() {
-        _order = updated;
-        _coords = _orderCoords(_order) ?? _coords;
-      });
-    } catch (_) {}
-  }
-
-  void _connectRealtime(String token) {
+  void _connectRealtime() {
     _ordersSub?.cancel();
-    _ordersChannel?.sink.close();
-    final url = '${ApiService.wsBaseUrl}/ws/orders?token=$token';
-    _ordersChannel = IOWebSocketChannel.connect(Uri.parse(url));
-    _ordersSub = _ordersChannel!.stream.listen((event) {
-      try {
-        final data = jsonDecode(event);
-        if (data is Map &&
-            OrderEventUtils.isOrderEvent(data, orderId: _order.id)) {
-          _handleOrderEvent(data);
-        }
-      } catch (_) {}
+    _ordersSub = FirestoreOrderService.streamById(_order.id).listen((updated) {
+      if (updated != null && mounted) {
+        setState(() {
+          _order = updated;
+          _coords = _orderCoords(_order) ?? _coords;
+        });
+      }
     });
-  }
-
-  Future<void> _handleOrderEvent(Map data) async {
-    final payload = OrderEventUtils.extractOrderPayload(data);
-    if (payload != null) {
-      if (!mounted) return;
-      setState(() {
-        _order = Order.fromJson(payload);
-        _coords = _orderCoords(_order) ?? _coords;
-      });
-      return;
-    }
-    await _loadOrder();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
-    final currentUserId =
-        int.tryParse(Provider.of<UserProvider>(context).id ?? '');
+    final currentUserId = Provider.of<UserProvider>(context).id;
     final surface = isDark ? AppColors.surfaceDarkTheme : Colors.white;
     final border = isDark ? AppColors.borderDefaultDark : AppColors.borderLight;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight,
-      appBar: AppBar(
-        title: Text(l10n.orderDetailsTitle),
-      ),
+      backgroundColor: isDark
+          ? AppColors.backgroundDarkTheme
+          : AppColors.backgroundLight,
+      appBar: AppBar(title: Text(l10n.orderDetailsTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         child: Column(
@@ -159,7 +115,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   Widget _buildHeader(
     bool isDark,
-    int? currentUserId,
+    String? currentUserId,
     AppLocalizations l10n,
   ) {
     final roleLabel = _roleLabelForOrder(_order, currentUserId, l10n);
@@ -213,8 +169,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       Text(
                         l10n.equipmentCodeValue(_order.equipamento.codigo),
                         style: AppTypography.caption.copyWith(
-                          color:
-                              isDark ? AppColors.slate300 : AppColors.slate600,
+                          color: isDark
+                              ? AppColors.slate300
+                              : AppColors.slate600,
                         ),
                       ),
                     ],
@@ -225,8 +182,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.caption.copyWith(
-                          color:
-                              isDark ? AppColors.slate300 : AppColors.slate600,
+                          color: isDark
+                              ? AppColors.slate300
+                              : AppColors.slate600,
                         ),
                       ),
                     ],
@@ -236,19 +194,15 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _badge(_statusLabel(_order.status, l10n), isDark),
-              const SizedBox(width: 8),
               _chip(_order.priority, isDark),
-              const SizedBox(width: 8),
               _chip(typeLabel, isDark),
-              const SizedBox(width: 8),
-              _chip(l10n.orderNumberLabel(_order.id.toString()), isDark),
-              if (roleLabel != null) ...[
-                const SizedBox(width: 8),
-                _roleChip(roleLabel, isDark),
-              ],
+              _chip(l10n.orderNumberLabel(_order.id), isDark),
+              if (roleLabel != null) _roleChip(roleLabel, isDark),
             ],
           ),
           const SizedBox(height: 12),
@@ -320,10 +274,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             child: coords == null
                 ? _buildMapPlaceholder(isDark)
                 : FlutterMap(
-                    options: MapOptions(
-                      initialCenter: coords,
-                      initialZoom: 15,
-                    ),
+                    options: MapOptions(initialCenter: coords, initialZoom: 15),
                     children: [
                       TileLayer(
                         urlTemplate:
@@ -383,7 +334,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isMaintenance ? l10n.assignedChecklist : l10n.problemDescriptionLabel,
+            isMaintenance
+                ? l10n.assignedChecklist
+                : l10n.problemDescriptionLabel,
             style: AppTypography.subtitle1.copyWith(
               color: isDark ? Colors.white : AppColors.textPrimary,
             ),
@@ -392,11 +345,11 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           Text(
             isMaintenance
                 ? (_order.checklist.nome.isNotEmpty
-                    ? _order.checklist.nome
-                    : l10n.checklistNotAssigned)
+                      ? _order.checklist.nome
+                      : l10n.checklistNotAssigned)
                 : (_order.problemDescription?.isNotEmpty == true
-                    ? _order.problemDescription!
-                    : l10n.problemDescriptionEmpty),
+                      ? _order.problemDescription!
+                      : l10n.problemDescriptionEmpty),
             style: AppTypography.bodyText.copyWith(
               color: isDark ? AppColors.slate300 : AppColors.slate600,
             ),
@@ -426,7 +379,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   Widget _buildTechnicianCard(
     bool isDark,
-    int? currentUserId,
+    String? currentUserId,
     AppLocalizations l10n,
   ) {
     final roleLabel = _roleLabelForOrder(_order, currentUserId, l10n);
@@ -491,10 +444,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
               ],
             ),
           ),
-          OutlinedButton(
-            onPressed: () {},
-            child: Text(l10n.reassign),
-          ),
+          OutlinedButton(onPressed: null, child: Text(l10n.reassign)),
         ],
       ),
     );
@@ -522,18 +472,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     Color text;
     final normalized = status.toLowerCase();
     if (normalized.contains('atras')) {
-        bg = AppColors.statusFailedBg;
-        text = AppColors.statusFailedText;
+      bg = AppColors.statusFailedBg;
+      text = AppColors.statusFailedText;
     } else if (normalized.contains('andamento')) {
-        bg = AppColors.statusInProgressBg;
-        text = AppColors.statusInProgressText;
+      bg = AppColors.statusInProgressBg;
+      text = AppColors.statusInProgressText;
     } else if (normalized.contains('conclu') ||
         normalized.contains('finaliz')) {
-        bg = AppColors.statusCompletedBg;
-        text = AppColors.statusCompletedText;
+      bg = AppColors.statusCompletedBg;
+      text = AppColors.statusCompletedText;
     } else {
-        bg = AppColors.statusPendingBg;
-        text = AppColors.statusPendingText;
+      bg = AppColors.statusPendingBg;
+      text = AppColors.statusPendingText;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -570,7 +520,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
 
   String? _roleLabelForOrder(
     Order order,
-    int? currentUserId,
+    String? currentUserId,
     AppLocalizations l10n,
   ) {
     if (currentUserId == null) return null;
@@ -694,9 +644,7 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
           title: Text(l10n.equipmentCodeLabel),
           content: TextField(
             controller: controller,
-            decoration: InputDecoration(
-              hintText: l10n.equipmentCodeHint,
-            ),
+            decoration: InputDecoration(hintText: l10n.equipmentCodeHint),
             textInputAction: TextInputAction.done,
           ),
           actions: [
@@ -720,9 +668,8 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => MaintenanceExecutionEntryScreen(
-          initialEquipmentCode: code,
-        ),
+        builder: (_) =>
+            MaintenanceExecutionEntryScreen(initialEquipmentCode: code),
       ),
     );
   }
@@ -739,7 +686,10 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           const SizedBox(height: 8),
-          Text('Buscando localização...', style: AppTypography.caption.copyWith(color: textColor)),
+          Text(
+            AppLocalizations.of(context)!.searchingLocation,
+            style: AppTypography.caption.copyWith(color: textColor),
+          ),
         ],
       );
     }
@@ -760,7 +710,9 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
   Future<void> _fetchGeocodedCoords() async {
     final query = _buildAddressQuery(_order);
     if (query == null) {
-      setState(() => _geoError = 'Localização indisponível');
+      setState(
+        () => _geoError = AppLocalizations.of(context)!.locationUnavailable,
+      );
       return;
     }
     setState(() {
@@ -768,25 +720,18 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
       _geoError = null;
     });
     try {
-      final uri = Uri.https(
-        'nominatim.openstreetmap.org',
-        '/search',
-        {
-          'q': query,
-          'format': 'jsonv2',
-          'limit': '1',
-        },
-      );
+      final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+        'q': query,
+        'format': 'jsonv2',
+        'limit': '1',
+      });
       final response = await http.get(
         uri,
-        headers: {
-          'User-Agent': 'fixit-app',
-          'Accept-Language': 'pt-BR',
-        },
+        headers: {'User-Agent': 'fixit-app', 'Accept-Language': 'pt-BR'},
       );
       if (response.statusCode != 200) {
         setState(() {
-          _geoError = 'Não foi possível localizar';
+          _geoError = AppLocalizations.of(context)!.locationUnavailable;
           _isGeocoding = false;
         });
         return;
@@ -806,12 +751,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
         }
       }
       setState(() {
-        _geoError = 'Localização indisponível';
+        _geoError = AppLocalizations.of(context)!.locationUnavailable;
         _isGeocoding = false;
       });
     } catch (_) {
       setState(() {
-        _geoError = 'Erro ao buscar localização';
+        _geoError = AppLocalizations.of(context)!.locationFetchError;
         _isGeocoding = false;
       });
     }

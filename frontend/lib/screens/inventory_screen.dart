@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../providers/user_provider.dart';
-import '../services/equipment_service.dart';
+import '../services/firestore_equipment_service.dart';
 import 'add_edit_equipment_screen.dart';
 import 'maintenance_execution_entry_screen.dart';
+import '../widgets/equipment_qr_dialog.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({Key? key}) : super(key: key);
@@ -21,7 +20,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _equipmentList = [];
   List<Map<String, dynamic>> _filteredList = [];
-  String? _lastToken;
 
   @override
   void initState() {
@@ -33,11 +31,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token != null && token != _lastToken) {
-      _lastToken = token;
-      _loadEquipment();
-    }
+    // No token check needed
   }
 
   @override
@@ -49,14 +43,14 @@ class _InventoryScreenState extends State<InventoryScreen> {
   Future<void> _loadEquipment() async {
     setState(() => _isLoading = true);
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) {
-        return;
-      }
-      final list = await EquipmentService.getAll(token: token);
+      final list = await FirestoreEquipmentService.getAll();
       if (mounted) {
         setState(() {
-          _equipmentList = list;
+          _equipmentList = list.map((e) {
+            final map = e.toMap();
+            map['id'] = e.id;
+            return map;
+          }).toList();
           _filterList();
         });
       }
@@ -133,13 +127,40 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   ? const Center(child: CircularProgressIndicator())
                   : _filteredList.isEmpty
                   ? Center(
-                      child: Text(
-                        'No items found',
-                        style: TextStyle(
-                          color: isDark
-                              ? AppColors.slate400
-                              : AppColors.slate500,
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: isDark
+                                ? AppColors.slate600
+                                : AppColors.slate300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.noEquipmentYet,
+                            style: AppTypography.subtitle1.copyWith(
+                              color: isDark
+                                  ? AppColors.textPrimaryDark
+                                  : AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 48),
+                            child: Text(
+                              l10n.noEquipmentMessage,
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodyTextSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.slate400
+                                    : AppColors.slate500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : RefreshIndicator(
@@ -157,6 +178,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                             context,
                             _filteredList[index],
                             isDark,
+                            l10n,
                           );
                         },
                       ),
@@ -360,6 +382,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     BuildContext context,
     Map<String, dynamic> item,
     bool isDark,
+    AppLocalizations l10n,
   ) {
     final status = 'Operational'; // Mock status if not in payload
     final statusColor = Colors.green;
@@ -465,25 +488,49 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       const Icon(Icons.chevron_right, color: Color(0xFF92ADC9)),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item['nome'] ?? 'Unnamed',
-                    style: AppTypography.bodyText.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
-                      fontSize: 16,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    '${item['codigo'] ?? 'No Serial'} • ${item['cliente']?['nome'] ?? 'Unknown Client'}',
-                    style: TextStyle(
-                      color: const Color(0xFF92ADC9),
-                      fontSize: 12,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['nome'] ?? 'Unnamed',
+                            style: AppTypography.bodyText.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
+                              fontSize: 16,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            '${item['codigo'] ?? 'No Serial'} • ${item['cliente']?['nome'] ?? 'Unknown Client'}',
+                            style: const TextStyle(
+                              color: Color(0xFF92ADC9),
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => EquipmentQrDialog.show(context, item),
+                        icon: const Icon(
+                          Icons.qr_code,
+                          color: AppColors.primary,
+                          size: 22,
+                        ),
+                        tooltip: l10n.generateQr,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ),
                 ],
               ),

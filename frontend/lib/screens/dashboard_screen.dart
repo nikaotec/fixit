@@ -1,14 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'dart:convert';
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
-
 import '../theme/app_typography.dart';
 import 'order_details_screen.dart';
 import 'profile_screen.dart';
@@ -21,9 +16,7 @@ import 'create_service_order_screen.dart';
 import 'technicians_screen.dart';
 import '../models/order.dart';
 import '../providers/user_provider.dart';
-import '../services/order_service.dart';
-import '../services/api_service.dart';
-import '../services/order_event_utils.dart';
+import '../services/firestore_order_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -37,122 +30,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoadingOrders = false;
   String? _ordersError;
   List<Order> _orders = [];
-  String? _lastToken;
   final GlobalKey<ServiceOrdersScreenState> _ordersKey =
       GlobalKey<ServiceOrdersScreenState>();
-  WebSocketChannel? _ordersChannel;
   StreamSubscription? _ordersSub;
 
   @override
   void initState() {
     super.initState();
-    _loadOrders();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final token = Provider.of<UserProvider>(context).token;
-    if (token != null && token != _lastToken) {
-      _lastToken = token;
-      _connectRealtime(token);
-      _loadOrders();
-    }
+    _subscribeOrders();
   }
 
   @override
   void dispose() {
     _ordersSub?.cancel();
-    _ordersChannel?.sink.close();
     super.dispose();
   }
 
-  void _connectRealtime(String token) {
-    _ordersSub?.cancel();
-    _ordersChannel?.sink.close();
-    final url = '${ApiService.wsBaseUrl}/ws/orders?token=$token';
-    _ordersChannel = IOWebSocketChannel.connect(Uri.parse(url));
-    _ordersSub = _ordersChannel!.stream.listen((event) {
-      try {
-        final data = jsonDecode(event);
-        if (data is Map && OrderEventUtils.isOrderEvent(data)) {
-          _handleOrderEvent(data);
-        }
-      } catch (_) {
-        // ignore malformed events
-      }
-    });
-  }
-
-  Future<void> _handleOrderEvent(Map data) async {
-    final orderId = OrderEventUtils.extractOrderId(data);
-    if (orderId == null) return;
-    if (OrderEventUtils.isDeleteEvent(data)) {
-      if (!mounted) return;
-      setState(() {
-        _orders.removeWhere((order) => order.id == orderId);
-      });
-      return;
-    }
-    final payload = OrderEventUtils.extractOrderPayload(data);
-    if (payload != null) {
-      final updated = Order.fromJson(payload);
-      _applyRealtimeOrder(updated);
-      return;
-    }
-    try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) return;
-      final updated = await OrderService.getById(token: token, id: orderId);
-      _applyRealtimeOrder(updated);
-    } catch (e) {
-      _handleOrderFetchError(orderId, e);
-    }
-  }
-
-  void _applyRealtimeOrder(Order updated) {
-    final currentUserId =
-        int.tryParse(Provider.of<UserProvider>(context, listen: false).id ?? '');
-    if (_isOrderRelevant(updated, currentUserId)) {
-      _upsertOrder(updated);
-      return;
-    }
-    if (!mounted) return;
-    setState(() {
-      _orders.removeWhere((order) => order.id == updated.id);
-    });
-  }
-
-  void _handleOrderFetchError(int orderId, Object error) {
-    final raw = error.toString();
-    if (!raw.contains('401') &&
-        !raw.contains('403') &&
-        !raw.contains('404')) {
-      return;
-    }
-    if (!mounted) return;
-    setState(() {
-      _orders.removeWhere((order) => order.id == orderId);
-    });
-  }
-
-  bool _isOrderRelevant(Order order, int? currentUserId) {
-    if (currentUserId == null) return true;
-    final isCreator = order.criador?.id == currentUserId;
-    final isResponsible = order.responsavel?.id == currentUserId;
-    return isCreator || isResponsible;
-  }
-
-  void _upsertOrder(Order updated) {
-    if (!mounted) return;
-    setState(() {
-      final index = _orders.indexWhere((order) => order.id == updated.id);
-      if (index >= 0) {
-        _orders[index] = updated;
-      } else {
-        _orders.insert(0, updated);
-      }
-    });
+  void _subscribeOrders() {
+    _loadOrders();
   }
 
   Future<void> _loadOrders() async {
@@ -161,9 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _ordersError = null;
     });
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) return;
-      final list = await OrderService.getAll(token: token);
+      final list = await FirestoreOrderService.getAll();
       setState(() => _orders = list);
     } catch (e) {
       setState(() => _ordersError = e.toString());
@@ -178,7 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final userProvider = Provider.of<UserProvider>(context);
-    final currentUserId = int.tryParse(userProvider.id ?? '');
+    final currentUserId = userProvider.id;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark
         ? AppColors.backgroundDarkTheme
@@ -259,10 +152,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             // Tab 1 (Orders)
-            ServiceOrdersScreen(
-              key: _ordersKey,
-              isActive: _selectedIndex == 1,
-            ),
+            ServiceOrdersScreen(key: _ordersKey, isActive: _selectedIndex == 1),
             // Tab 2 (Inventory)
             const InventoryScreen(),
             // Tab 3 (Notifications)
@@ -490,17 +380,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Row(
                   children: [
                     if (isUp)
-                      Icon(
-                        Icons.arrow_drop_up,
-                        color: trendColor,
-                        size: 18,
-                      )
+                      Icon(Icons.arrow_drop_up, color: trendColor, size: 18)
                     else if (isDown)
-                      Icon(
-                        Icons.arrow_drop_down,
-                        color: trendColor,
-                        size: 18,
-                      ),
+                      Icon(Icons.arrow_drop_down, color: trendColor, size: 18),
                     Text(
                       trend,
                       style: AppTypography.captionSmall.copyWith(
@@ -514,7 +396,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              '$percent do total',
+              AppLocalizations.of(context)!.percentOfTotal(percent),
               style: AppTypography.captionSmall.copyWith(
                 color: textSecondaryColor,
                 fontWeight: FontWeight.w500,
@@ -747,7 +629,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color textSecondaryColor,
     AppLocalizations l10n,
     List<Order> orders,
-    int? currentUserId,
+    String? currentUserId,
   ) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -839,7 +721,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color textColor,
     Color textSecondaryColor,
     AppLocalizations l10n,
-    int? currentUserId,
+    String? currentUserId,
   ) {
     final badge = _priorityBadge(order.priority, isDark, l10n);
     final time = _timeAgo(order.dataCriacao);
@@ -857,16 +739,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: surfaceColor,
-          border: Border.all(
-            color: _statusBorderColor(order.status, isDark),
-          ),
+          border: Border.all(color: _statusBorderColor(order.status, isDark)),
           borderRadius: BorderRadius.circular(12),
           boxShadow: isDark
               ? []
               : [
                   BoxShadow(
-                    color:
-                        _statusTextColor(order.status, isDark).withOpacity(0.25),
+                    color: _statusTextColor(
+                      order.status,
+                      isDark,
+                    ).withOpacity(0.25),
                     blurRadius: 12,
                     spreadRadius: 1,
                     offset: const Offset(0, 6),
@@ -906,7 +788,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark ? badge.bg.withOpacity(0.2) : badge.bg,
                     borderRadius: BorderRadius.circular(4),
@@ -915,7 +800,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     badge.text.toUpperCase(),
                     style: AppTypography.overline.copyWith(
                       fontSize: 10,
-                      color: isDark ? badge.color.withOpacity(0.8) : badge.color,
+                      color: isDark
+                          ? badge.color.withOpacity(0.8)
+                          : badge.color,
                       letterSpacing: 0.5,
                       height: 1.0,
                     ),
@@ -923,6 +810,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
+            if (order.equipamento.nome.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.precision_manufacturing_outlined,
+                    size: 14,
+                    color: textSecondaryColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      order.equipamento.nome,
+                      style: AppTypography.captionSmall.copyWith(
+                        color: textSecondaryColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 16),
             Row(
               children: [
@@ -959,7 +870,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String? _roleLabelForOrder(
     Order order,
-    int? currentUserId,
+    String? currentUserId,
     AppLocalizations l10n,
   ) {
     if (currentUserId == null) return null;
@@ -1105,9 +1016,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'ATRASADA':
       case 'OVERDUE':
       case 'CANCELADA':
-        return isDark
-            ? AppColors.statusFailedBgDark
-            : AppColors.statusFailedBg;
+        return isDark ? AppColors.statusFailedBgDark : AppColors.statusFailedBg;
       case 'EM_ANDAMENTO':
       case 'IN_PROGRESS':
         return isDark

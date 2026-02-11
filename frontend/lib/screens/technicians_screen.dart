@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../providers/user_provider.dart';
-import '../services/technician_service.dart';
+import '../services/firestore_technician_service.dart';
 import '../models/technician.dart';
 import 'technician_profile_screen.dart';
 
@@ -25,7 +25,6 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
   List<Technician> _searchResults = [];
   List<Technician> _cachedFavorites = [];
   Set<String> _favoriteIds = {};
-  String? _lastToken;
   bool _isSearching = false;
 
   @override
@@ -44,18 +43,15 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final token = Provider.of<UserProvider>(context).token;
-    if (token != null && token != _lastToken) {
-      _lastToken = token;
-      _loadTechnicians();
-    }
+    // No longer need token check
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final background =
-        isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight;
+    final background = isDark
+        ? AppColors.backgroundDarkTheme
+        : AppColors.backgroundLight;
     final surface = isDark ? AppColors.surfaceDarkTheme : Colors.white;
     final border = isDark ? AppColors.borderDefaultDark : AppColors.borderLight;
     final text = isDark ? Colors.white : AppColors.textPrimary;
@@ -92,7 +88,10 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.slate800 : AppColors.slate100,
                     borderRadius: BorderRadius.circular(20),
@@ -277,9 +276,7 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
       _error = null;
     });
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) return;
-      final results = await TechnicianService.search(token: token, query: query);
+      final results = await FirestoreTechnicianService.search(query: query);
       if (!mounted) return;
       setState(() => _searchResults = results);
     } catch (e) {
@@ -345,9 +342,9 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _openProfile(Technician tech) {
@@ -368,14 +365,14 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
       _error = null;
     });
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      final currentUserId =
-          Provider.of<UserProvider>(context, listen: false).id;
-      if (token == null) return;
+      final currentUserId = Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).id;
       final results = await Future.wait([
-        TechnicianService.getAll(token: token),
-        TechnicianService.getFavorites(token: token),
-        TechnicianService.getFavoriteDetails(token: token),
+        FirestoreTechnicianService.getAll(),
+        FirestoreTechnicianService.getFavorites(),
+        FirestoreTechnicianService.getFavoriteDetails(),
       ]);
       final list = (results[0] as List<Technician>)
           .where((tech) => tech.id != currentUserId)
@@ -390,7 +387,7 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
         }
       });
       if (favoriteDetails.isNotEmpty || favoriteIds.isEmpty) {
-        await TechnicianService.saveCachedFavorites(favoriteDetails);
+        await FirestoreTechnicianService.saveCachedFavorites(favoriteDetails);
       }
       await _refreshCachedFavorites();
     } catch (e) {
@@ -401,8 +398,6 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
   }
 
   Future<void> _toggleFavorite(Technician tech) async {
-    final token = Provider.of<UserProvider>(context, listen: false).token;
-    if (token == null) return;
     final isFavorite = _favoriteIds.contains(tech.id);
     setState(() {
       if (isFavorite) {
@@ -411,13 +406,9 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
         _favoriteIds.add(tech.id);
       }
     });
-    await _updateCachedFavorites(
-      tech: tech,
-      isFavorite: !isFavorite,
-    );
+    await _updateCachedFavorites(tech: tech, isFavorite: !isFavorite);
     try {
-      final updated = await TechnicianService.setFavorite(
-        token: token,
+      final updated = await FirestoreTechnicianService.setFavorite(
         technicianId: tech.id,
         isFavorite: !isFavorite,
       );
@@ -433,16 +424,13 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
           _favoriteIds.remove(tech.id);
         }
       });
-      await _updateCachedFavorites(
-        tech: tech,
-        isFavorite: isFavorite,
-      );
+      await _updateCachedFavorites(tech: tech, isFavorite: isFavorite);
       _showSnack('Não foi possível salvar o favorito');
     }
   }
 
   Future<void> _loadCachedFavorites() async {
-    final cached = await TechnicianService.loadCachedFavorites();
+    final cached = await FirestoreTechnicianService.loadCachedFavorites();
     if (!mounted) return;
     setState(() {
       _cachedFavorites = cached;
@@ -465,7 +453,7 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
     }
     if (!mounted) return;
     setState(() => _cachedFavorites = updated);
-    await TechnicianService.saveCachedFavorites(updated);
+    await FirestoreTechnicianService.saveCachedFavorites(updated);
   }
 
   Future<void> _refreshCachedFavorites() async {
@@ -473,7 +461,7 @@ class _TechniciansScreenState extends State<TechniciansScreen> {
     final updated = _buildFavoritesList();
     if (!mounted) return;
     setState(() => _cachedFavorites = updated);
-    await TechnicianService.saveCachedFavorites(updated);
+    await FirestoreTechnicianService.saveCachedFavorites(updated);
   }
 }
 
@@ -532,150 +520,165 @@ class _TechnicianCard extends StatelessWidget {
           ),
           child: Column(
             children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: statusColor.withOpacity(0.15),
-                backgroundImage:
-                    tech.avatarUrl != null ? NetworkImage(tech.avatarUrl!) : null,
-                child: tech.avatarUrl == null
-                    ? Text(
-                        tech.name.isNotEmpty ? tech.name[0] : '?',
-                        style: AppTypography.subtitle2.copyWith(color: statusColor),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      tech.name,
-                      style: AppTypography.bodyText.copyWith(
-                        color: text,
-                        fontWeight: FontWeight.w600,
-                      ),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: statusColor.withOpacity(0.15),
+                    backgroundImage: tech.avatarUrl != null
+                        ? NetworkImage(tech.avatarUrl!)
+                        : null,
+                    child: tech.avatarUrl == null
+                        ? Text(
+                            tech.name.isNotEmpty ? tech.name[0] : '?',
+                            style: AppTypography.subtitle2.copyWith(
+                              color: statusColor,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tech.name,
+                          style: AppTypography.bodyText.copyWith(
+                            color: text,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          tech.role,
+                          style: AppTypography.caption.copyWith(
+                            color: subtitle,
+                          ),
+                        ),
+                        if (tech.email != null && tech.email!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            tech.email!,
+                            style: AppTypography.captionSmall.copyWith(
+                              color: subtitle,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      tech.role,
-                      style: AppTypography.caption.copyWith(color: subtitle),
-                    ),
-                    if (tech.email != null && tech.email!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        tech.email!,
-                        style: AppTypography.captionSmall.copyWith(color: subtitle),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _StatusBadge(status: tech.status),
+                      if (isExternal) ...[
+                        const SizedBox(height: 6),
+                        _TagBadge(label: 'Plataforma', isDark: isDark),
+                      ],
+                      const SizedBox(height: 8),
+                      IconButton(
+                        onPressed: onFavorite,
+                        icon: Icon(
+                          isFavorite ? Icons.star : Icons.star_border,
+                          size: 18,
+                          color: isFavorite ? AppColors.warning : null,
+                        ),
+                        tooltip: isFavorite
+                            ? 'Remover favorito'
+                            : 'Adicionar favorito',
                       ),
                     ],
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  _StatusBadge(status: tech.status),
-                  if (isExternal) ...[
-                    const SizedBox(height: 6),
-                    _TagBadge(
-                      label: 'Plataforma',
-                      isDark: isDark,
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  IconButton(
-                    onPressed: onFavorite,
-                    icon: Icon(
-                      isFavorite ? Icons.star : Icons.star_border,
-                      size: 18,
-                      color: isFavorite ? AppColors.warning : null,
-                    ),
-                    tooltip:
-                        isFavorite ? 'Remover favorito' : 'Adicionar favorito',
                   ),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              if (tech.rating > 0) ...[
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.slate800 : AppColors.slate100,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.star, size: 14, color: AppColors.warning),
-                      const SizedBox(width: 6),
-                      Text(
-                        tech.rating.toStringAsFixed(1),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  if (tech.rating > 0) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.slate800 : AppColors.slate100,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.star, size: 14, color: AppColors.warning),
+                          const SizedBox(width: 6),
+                          Text(
+                            tech.rating.toStringAsFixed(1),
+                            style: AppTypography.captionSmall.copyWith(
+                              color: subtitle,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (tech.reviewCount > 0) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.slate800 : AppColors.slate100,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        '${tech.reviewCount} avaliações',
                         style: AppTypography.captionSmall.copyWith(
                           color: subtitle,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              if (tech.reviewCount > 0) ...[
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.slate800 : AppColors.slate100,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    '${tech.reviewCount} avaliações',
-                    style: AppTypography.captionSmall.copyWith(
-                      color: subtitle,
-                      fontWeight: FontWeight.w600,
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.slate800 : AppColors.slate100,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${tech.completed} tarefas',
+                      style: AppTypography.captionSmall.copyWith(
+                        color: subtitle,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-              ],
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.slate800 : AppColors.slate100,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '${tech.completed} tarefas',
-                  style: AppTypography.captionSmall.copyWith(
-                    color: subtitle,
-                    fontWeight: FontWeight.w600,
+                  const Spacer(),
+                  IconButton(
+                    onPressed: onProfile,
+                    icon: const Icon(Icons.person_outline, size: 18),
+                    tooltip: 'Perfil',
                   ),
-                ),
+                  IconButton(
+                    onPressed: onCall,
+                    icon: const Icon(Icons.call_outlined, size: 18),
+                    tooltip: 'Ligar',
+                  ),
+                  IconButton(
+                    onPressed: onAssign,
+                    icon: const Icon(
+                      Icons.assignment_turned_in_outlined,
+                      size: 18,
+                    ),
+                    tooltip: 'Atribuir',
+                  ),
+                ],
               ),
-              const Spacer(),
-              IconButton(
-                onPressed: onProfile,
-                icon: const Icon(Icons.person_outline, size: 18),
-                tooltip: 'Perfil',
-              ),
-              IconButton(
-                onPressed: onCall,
-                icon: const Icon(Icons.call_outlined, size: 18),
-                tooltip: 'Ligar',
-              ),
-              IconButton(
-                onPressed: onAssign,
-                icon: const Icon(Icons.assignment_turned_in_outlined, size: 18),
-                tooltip: 'Atribuir',
-              ),
-            ],
-          ),
             ],
           ),
         ),

@@ -1,7 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart'; // Needed for ThemeMode and Locale
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/api_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/push_notification_service.dart';
 
@@ -17,18 +18,23 @@ class UserProvider with ChangeNotifier {
     'ko',
     'ja',
   ];
-  String? _id;
-  String? _token;
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   String? _role;
   String? _name;
   String? _email;
+  String? _companyId;
 
-  String? get id => _id;
-  bool get isAuthenticated => _token != null;
-  String? get token => _token;
+  String? get id => _auth.currentUser?.uid;
+  bool get isAuthenticated => _auth.currentUser != null;
   String? get role => _role;
-  String? get name => _name;
-  String? get email => _email;
+  String? get name => _name ?? _auth.currentUser?.displayName;
+  String? get email => _email ?? _auth.currentUser?.email;
+  String? get photoURL => _auth.currentUser?.photoURL;
+  String? get companyId => _companyId;
+
   ThemeMode _themeMode = ThemeMode.system;
   ThemeMode get themeMode => _themeMode;
   Locale _locale = const Locale('en');
@@ -48,7 +54,6 @@ class UserProvider with ChangeNotifier {
     } else if (legacyLanguageCode != null) {
       _locale = Locale(legacyLanguageCode);
     } else {
-      // Auto-detect system language
       final systemLocale = WidgetsBinding.instance.platformDispatcher.locale;
       final systemTag = _localeToTag(systemLocale);
       if (_supportedLanguageTags.contains(systemTag)) {
@@ -92,69 +97,85 @@ class UserProvider with ChangeNotifier {
 
   Locale _localeFromTag(String tag) {
     final parts = tag.split(RegExp('[-_]'));
-    if (parts.length == 1) {
-      return Locale(parts[0]);
-    }
+    if (parts.length == 1) return Locale(parts[0]);
     if (parts.length == 2 && parts[1].length == 4) {
       return Locale.fromSubtags(languageCode: parts[0], scriptCode: parts[1]);
     }
-    if (parts.length >= 2) {
-      return Locale(parts[0], parts[1]);
-    }
+    if (parts.length >= 2) return Locale(parts[0], parts[1]);
     return const Locale('en');
   }
 
   Future<void> fetchUserProfile() async {
-    if (_token == null) return;
+    final user = _auth.currentUser;
+    if (user == null) return;
+
     try {
-      final data = await ApiService.getUserProfile(_token!);
-      _id = data['id']?.toString();
-      _name = data['name'];
-      _email = data['email'];
-      _role = data['role']; // Assuming backend returns role
-      // update prefs
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        _name = data['name'] ?? user.displayName;
+        _email = data['email'] ?? user.email;
+        _role = data['role'] ?? 'TECHNICIAN';
+        _companyId = data['companyId'];
+
+        if (_companyId == null) {
+          // If user exists but has no company, create one
+          final companyDoc = await _firestore.collection('companies').add({
+            'name': '${_name ?? "Minha"}\'s Company',
+            'createdAt': FieldValue.serverTimestamp(),
+            'ownerId': user.uid,
+          });
+          _companyId = companyDoc.id;
+          await _firestore.collection('users').doc(user.uid).update({
+            'companyId': _companyId,
+          });
+        }
+      } else {
+        // Self-Healing: Create missing profile and company
+        final companyDoc = await _firestore.collection('companies').add({
+          'name': '${user.displayName ?? "Minha"}\'s Company',
+          'createdAt': FieldValue.serverTimestamp(),
+          'ownerId': user.uid,
+        });
+        _companyId = companyDoc.id;
+        _name = user.displayName;
+        _email = user.email;
+        _role = 'ADMIN';
+
+        await _firestore.collection('users').doc(user.uid).set({
+          'name': _name ?? '',
+          'email': _email ?? '',
+          'role': _role,
+          'companyId': _companyId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
       final prefs = await SharedPreferences.getInstance();
       if (_name != null) await prefs.setString('name', _name!);
       if (_email != null) await prefs.setString('email', _email!);
       if (_role != null) await prefs.setString('role', _role!);
-      if (_id != null) await prefs.setString('userId', _id!);
+      if (_companyId != null) await prefs.setString('companyId', _companyId!);
 
-      debugPrint('✅ User profile updated: $_name');
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Failed to fetch user profile: $e');
-      if (e.toString().contains('403') || e.toString().contains('401')) {
-        debugPrint('🔒 Token expired or invalid, logging out...');
-        logout();
-      }
+      debugPrint('Failed to fetch user profile: $e');
     }
   }
 
   Future<bool> login(String email, String password) async {
     try {
-      debugPrint('🔵 Attempting login for: $email');
-      final response = await ApiService.login(email, password);
-      _id = response['id']?.toString();
-      _token = response['token'];
-      _role = response['role'];
-      _name = response['name'];
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
 
-      final prefs = await SharedPreferences.getInstance();
-      if (_id != null) await prefs.setString('userId', _id!);
-      await prefs.setString('token', _token!);
-      await prefs.setString('role', _role!);
-      await prefs.setString('name', _name!);
-      await prefs.setString('email', email); // Adding email persistence
-      _email = email;
-
-      debugPrint('✅ Login successful for: $_name (Role: $_role)');
+      await fetchUserProfile();
+      PushNotificationService.initialize();
       notifyListeners();
-      PushNotificationService.updateAuthToken(_token);
-      // Fetch fresh profile data in background
-      fetchUserProfile();
       return true;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Login failed: ${e.code}');
+      return false;
     } catch (e) {
-      debugPrint('❌ Login failed: $e');
+      debugPrint('Login failed: $e');
       return false;
     }
   }
@@ -167,136 +188,139 @@ class UserProvider with ChangeNotifier {
     String? companyName,
   }) async {
     try {
-      debugPrint('🔵 Attempting registration for: $email');
-      final response = await ApiService.register(
-        name: name,
+      final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
-        language: language,
-        companyName: companyName,
       );
 
-      // Auto-login after successful registration
-      if (response.containsKey('token')) {
-        _id = response['id']?.toString();
-        _token = response['token'];
-        _role = response['role'];
-        _name = response['name'];
+      await credential.user?.updateDisplayName(name);
 
-        final prefs = await SharedPreferences.getInstance();
-        if (_id != null) await prefs.setString('userId', _id!);
-        await prefs.setString('token', _token!);
-        await prefs.setString('role', _role!);
-        await prefs.setString('name', _name!);
-        await prefs.setString('email', email);
-        _email = email;
-
-        debugPrint('✅ Registration and auto-login successful for: $_name');
-        notifyListeners();
-        PushNotificationService.updateAuthToken(_token);
+      // Create or find company
+      String companyId;
+      if (companyName != null && companyName.isNotEmpty) {
+        final companyDoc = await _firestore.collection('companies').add({
+          'name': companyName,
+          'createdAt': FieldValue.serverTimestamp(),
+          'ownerId': credential.user!.uid,
+        });
+        companyId = companyDoc.id;
+      } else {
+        // Create personal company
+        final companyDoc = await _firestore.collection('companies').add({
+          'name': '$name\'s Company',
+          'createdAt': FieldValue.serverTimestamp(),
+          'ownerId': credential.user!.uid,
+        });
+        companyId = companyDoc.id;
       }
 
+      // Create user document in Firestore
+      await _firestore.collection('users').doc(credential.user!.uid).set({
+        'name': name,
+        'email': email,
+        'role': 'ADMIN',
+        'companyId': companyId,
+        'language': language,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      _name = name;
+      _email = email;
+      _role = 'ADMIN';
+      _companyId = companyId;
+
+      PushNotificationService.initialize();
+      notifyListeners();
+
       return {'success': true, 'message': 'Account created successfully!'};
+    } on FirebaseAuthException catch (e) {
+      return {'success': false, 'message': e.message ?? 'Registration failed'};
     } catch (e) {
-      final errorMessage = e.toString().replaceAll('Exception: ', '');
-      debugPrint('❌ Registration failed: $errorMessage');
-      return {'success': false, 'message': errorMessage};
+      return {'success': false, 'message': e.toString()};
     }
   }
 
-  /// Sign in with Google
-  ///
-  /// Returns a map with:
-  /// - 'success': bool indicating if sign-in was successful
-  /// - 'message': Success or error message
   Future<Map<String, dynamic>> signInWithGoogle() async {
     try {
-      debugPrint('🔵 Starting Google Sign-In process...');
       final googleAuthService = GoogleAuthService();
+      final result = await googleAuthService.signInWithGoogle();
 
-      // Step 1: Sign in with Google and get Firebase ID token
-      final googleResult = await googleAuthService.signInWithGoogle();
-
-      if (!googleResult['success']) {
-        debugPrint('❌ Google Sign-In failed in step 1');
+      if (!result['success']) {
         return {
           'success': false,
-          'message': googleResult['message'] ?? 'Google sign-in failed',
+          'message': result['message'] ?? 'Google sign-in failed',
         };
       }
 
-      final String? idToken = googleResult['idToken'];
-      if (idToken == null) {
-        debugPrint('❌ Failed to get Firebase ID token');
-        return {
-          'success': false,
-          'message': 'Failed to get authentication token',
-        };
+      final user = _auth.currentUser;
+      if (user == null) {
+        return {'success': false, 'message': 'Authentication failed'};
       }
 
-      debugPrint('✅ Firebase ID token obtained, sending to backend...');
+      // Check if user document exists
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) {
+        // First-time Google user — create company and user document
+        final companyDoc = await _firestore.collection('companies').add({
+          'name': '${user.displayName ?? "My"}\'s Company',
+          'createdAt': FieldValue.serverTimestamp(),
+          'ownerId': user.uid,
+        });
 
-      // Step 2: Send Firebase ID token to backend
-      final response = await ApiService.googleLogin(idToken: idToken);
-
-      // Step 3: Store user data
-      _id = response['id']?.toString();
-      _token = response['token'];
-      _role = response['role'];
-      _name = response['name'] ?? googleResult['displayName'];
-
-      final prefs = await SharedPreferences.getInstance();
-      if (_id != null) await prefs.setString('userId', _id!);
-      await prefs.setString('token', _token!);
-      await prefs.setString('role', _role!);
-      await prefs.setString('name', _name!);
-      // Note: We'd need to extract email from Google result or backend response to save it here.
-      // For now, let's assume backend returns it or we get it from googleResult.
-      final String? email = response['email'] ?? googleResult['email'];
-      if (email != null) {
-        await prefs.setString('email', email);
-        _email = email;
+        await _firestore.collection('users').doc(user.uid).set({
+          'name': user.displayName ?? '',
+          'email': user.email ?? '',
+          'role': 'ADMIN',
+          'companyId': companyDoc.id,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       }
 
-      debugPrint('✅ Google Sign-In complete for: $_name (Role: $_role)');
-      notifyListeners();
-      PushNotificationService.updateAuthToken(_token);
+      await fetchUserProfile();
+      PushNotificationService.initialize();
 
       return {
         'success': true,
         'message': 'Successfully signed in with Google!',
       };
     } catch (e) {
-      final errorMessage = e.toString().replaceAll('Exception: ', '');
-      debugPrint('❌ Google Sign-In error in UserProvider: $errorMessage');
-      return {'success': false, 'message': errorMessage};
+      return {'success': false, 'message': e.toString()};
     }
   }
 
   Future<void> logout() async {
-    _token = null;
+    try {
+      await GoogleAuthService().signOut();
+    } catch (_) {}
+    await _auth.signOut();
+
     _role = null;
     _name = null;
     _email = null;
-    PushNotificationService.updateAuthToken(null);
+    _companyId = null;
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     notifyListeners();
   }
 
   Future<void> tryAutoLogin() async {
-    await loadPreferences(); // Load theme/lang
+    await loadPreferences();
+
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    // Load cached data from preferences
     final prefs = await SharedPreferences.getInstance();
-    if (!prefs.containsKey('token')) return;
-
-    _token = prefs.getString('token');
+    _name = prefs.getString('name') ?? user.displayName;
+    _email = prefs.getString('email') ?? user.email;
     _role = prefs.getString('role');
-    _name = prefs.getString('name');
-    _email = prefs.getString('email');
-    notifyListeners();
-    PushNotificationService.updateAuthToken(_token);
+    _companyId = prefs.getString('companyId');
 
-    // Refresh data
-    if (_token != null) fetchUserProfile();
+    notifyListeners();
+    PushNotificationService.initialize();
+
+    // Refresh from Firestore in background
+    fetchUserProfile();
   }
 }

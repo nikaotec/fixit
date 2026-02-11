@@ -1,133 +1,60 @@
 # FixIt - Sistema de Ordem de Serviço
 
-## 🐳 Executando com Docker
+## 🚀 Visão Geral
+Sistema de gestão de ordens de serviço (OS) para manutenção de equipamentos, construído com **Flutter** e **Firebase**.
+
+O sistema permite:
+- Gestão de Clientes e Equipamentos
+- Criação e acompanhamento de Ordens de Serviço
+- Execução de manutenção com checklist e upload de evidências
+- Geração de relatórios em PDF
+- Gestão de Técnicos e avaliações
+
+## 🛠️ Arquitetura
+O projeto migrou de um backend Java monolítico para uma arquitetura **Serverless** usando **Firebase**:
+
+- **Authentication**: Gestão de usuários (Login Google/Email)
+- **Firestore**: Banco de dados NoSQL em tempo real
+- **Storage**: Armazenamento de fotos e evidências
+- **Flutter**: Frontend mobile cross-platform
+
+## 📱 Executando o Projeto
 
 ### Pré-requisitos
-- Docker
-- Docker Compose v2 (plugin do Docker)
+- Flutter SDK instalado
+- Conta configurada no Firebase
 
-### Como rodar o sistema completo
+### Passo a passo
 
-1. **A dependência do Actuator já foi adicionada ao pom.xml** ✅
+1. **Clone o repositório**
 
-2. **Iniciar todos os serviços**:
+2. **Configure o Firebase**
+   - Certifique-se de ter o arquivo `google-services.json` (Android) e `GoogleService-Info.plist` (iOS) nas respectivas pastas:
+     - `frontend/android/app/google-services.json`
+     - `frontend/ios/Runner/GoogleService-Info.plist`
 
-```bash
-docker compose up -d
-```
-
-Este comando irá:
-- Criar e iniciar o banco de dados PostgreSQL
-- Compilar e iniciar o backend Java/Spring Boot
-- Iniciar o n8n para automações
-
-3. **Verificar o status dos serviços**:
-
-```bash
-docker compose ps
-```
-
-4. **Ver os logs**:
-
-```bash
-# Todos os serviços
-docker compose logs -f
-
-# Apenas o backend
-docker compose logs -f backend
-
-# Apenas o banco de dados
-docker compose logs -f postgres
-```
-
-### Acessando os serviços
-
-- **Backend API**: http://localhost:8080
-- **Health Check**: http://localhost:8080/actuator/health
-- **PostgreSQL**: localhost:5432
-  - Database: `fixit_db`
-  - User: `fixit_user`
-  - Password: `fixit_password`
-- **n8n**: http://localhost:5678
-
-### Comandos úteis
-
-```bash
-# Parar todos os serviços
-docker compose down
-
-# Parar e remover volumes (limpa o banco de dados)
-docker compose down -v
-
-# Rebuild do backend após mudanças no código
-docker compose up -d --build backend
-
-# Reiniciar apenas o backend
-docker compose restart backend
-
-# Ver logs em tempo real
-docker compose logs -f backend
-```
-
-### Desenvolvimento
-
-Para desenvolvimento local sem Docker:
-
-1. Certifique-se de que o PostgreSQL está rodando (pode usar apenas o serviço do postgres):
-```bash
-docker compose up -d postgres
-```
-
-2. Execute o backend localmente:
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-
-### Configuração de Ambiente
-
-As variáveis de ambiente do backend estão configuradas no `docker-compose.yml`:
-
-- `SPRING_PROFILES_ACTIVE=docker` - Usa o profile Docker
-- `SPRING_DATASOURCE_URL` - URL do banco de dados
-- `JWT_SECRET` - **⚠️ IMPORTANTE**: Altere em produção!
-- `JWT_EXPIRATION` - Tempo de expiração do token (24h)
-
-### Troubleshooting
-
-**Backend não inicia:**
-- Verifique se o PostgreSQL está healthy: `docker compose ps`
-- Veja os logs: `docker compose logs backend`
-
-**Erro de conexão com o banco:**
-- O backend aguarda o PostgreSQL ficar healthy antes de iniciar
-- Verifique as credenciais no `docker-compose.yml`
-
-**Rebuild completo:**
-```bash
-docker compose down -v
-docker compose build --no-cache
-docker compose up -d
-```
-
-## 📱 Frontend Flutter
-
-O frontend Flutter deve ser executado separadamente:
+3. **Instale as dependências**
 
 ```bash
 cd frontend
 flutter pub get
+```
+
+4. **Execute o App**
+
+```bash
 flutter run
 ```
 
-Configure a URL da API no frontend para apontar para `http://localhost:8080` (ou o IP da sua máquina se estiver testando em dispositivo físico).
+## 🔒 Regras de Segurança (Firestore)
+As regras de segurança garantem que cada empresa acesse apenas seus dados. O arquivo `firestore.rules` contém a definição atual.
 
-## 🔒 Segurança
+## 📦 Estrutura do Projeto (Frontend)
+- `lib/models`: Modelos de dados (Order, Client, Technician, etc.)
+- `lib/services`: Serviços de integração com Firestore (`FirestoreOrderService`, `FirestoreClientService`, etc.)
+- `lib/screens`: Telas da aplicação
+- `lib/providers`: Gestão de estado (UserProvider)
 
-**⚠️ IMPORTANTE para Produção:**
-
-1. Altere o `JWT_SECRET` no `docker-compose.yml` para um valor seguro
-2. Use secrets do Docker ou variáveis de ambiente externas
-3. Altere as credenciais do PostgreSQL
-4. Configure HTTPS/SSL
-5. Revise as configurações de CORS no backend
+## 📝 Próximos Passos (Backlog)
+- Implementar Cloud Functions para notificações push automáticas
+- Melhorar modo offline

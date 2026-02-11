@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:provider/provider.dart';
+
 import '../models/execution_models.dart';
-import '../providers/user_provider.dart';
-import '../services/execution_service.dart';
-import '../services/order_service.dart';
+
+import '../services/firestore_execution_service.dart';
+import '../services/firestore_order_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../l10n/app_localizations.dart';
@@ -48,8 +48,9 @@ class _MaintenanceExecutionEntryScreenState
       WidgetsBinding.instance.addPostFrameCallback((_) => _lookupByCode());
     } else if (widget.initialQrPayload != null &&
         widget.initialQrPayload!.isNotEmpty) {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _lookupByQr(widget.initialQrPayload!));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _lookupByQr(widget.initialQrPayload!),
+      );
     }
   }
 
@@ -58,8 +59,9 @@ class _MaintenanceExecutionEntryScreenState
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.backgroundDarkTheme : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDarkTheme
+          : AppColors.backgroundLight,
       appBar: AppBar(title: Text(l10n.maintenanceExecutionTitle)),
       body: SafeArea(
         child: AnimatedSwitcher(
@@ -125,7 +127,9 @@ class _MaintenanceExecutionEntryScreenState
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: Divider(color: AppColors.slate300.withOpacity(0.4))),
+              Expanded(
+                child: Divider(color: AppColors.slate300.withOpacity(0.4)),
+              ),
               const SizedBox(width: 12),
               Text(
                 l10n.orDivider,
@@ -134,7 +138,9 @@ class _MaintenanceExecutionEntryScreenState
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(child: Divider(color: AppColors.slate300.withOpacity(0.4))),
+              Expanded(
+                child: Divider(color: AppColors.slate300.withOpacity(0.4)),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -365,21 +371,12 @@ class _MaintenanceExecutionEntryScreenState
       _error = null;
     });
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) {
-        setState(() {
-          _error = l10n.userNotAuthenticatedError;
-          _step = 3;
-        });
-        return;
-      }
       final orderId = _parseOrderId(code);
       if (orderId != null) {
-        final resolved = await _lookupByOrderId(token, orderId);
+        final resolved = await _lookupByOrderId(orderId);
         if (resolved) return;
       }
-      final response = await ExecutionService.lookupExecution(
-        token: token,
+      final response = await FirestoreExecutionService.lookupExecution(
         equipmentCode: code.toUpperCase(),
       );
       if (!mounted) return;
@@ -405,10 +402,7 @@ class _MaintenanceExecutionEntryScreenState
       _error = null;
     });
     try {
-      final token = Provider.of<UserProvider>(context, listen: false).token;
-      if (token == null) throw Exception(l10n.userNotAuthenticatedError);
-      final response = await ExecutionService.lookupExecution(
-        token: token,
+      final response = await FirestoreExecutionService.lookupExecution(
         qrCodePayload: payload,
       );
       if (!mounted) return;
@@ -427,24 +421,25 @@ class _MaintenanceExecutionEntryScreenState
     }
   }
 
-  int? _parseOrderId(String input) {
-    final normalized = input.trim().toUpperCase();
-    if (normalized.startsWith('SO-')) {
-      return int.tryParse(normalized.substring(3));
+  String? _parseOrderId(String input) {
+    final normalized = input.trim();
+    if (normalized.toUpperCase().startsWith('SO-')) {
+      return normalized.substring(3);
     }
-    if (RegExp(r'^\d+$').hasMatch(normalized)) {
-      return int.tryParse(normalized);
+    // Allow any non-empty string as ID if it doesn't have spaces?
+    // Firestore IDs are usually 20 chars alphanumeric.
+    if (normalized.isNotEmpty && !normalized.contains(' ')) {
+      return normalized;
     }
     return null;
   }
 
-  Future<bool> _lookupByOrderId(String token, int orderId) async {
+  Future<bool> _lookupByOrderId(String orderId) async {
     try {
-      final order = await OrderService.getById(token: token, id: orderId);
+      final order = await FirestoreOrderService.getById(id: orderId);
       final qrPayload = order.equipamento.qrCode.trim();
       if (qrPayload.isNotEmpty) {
-        final response = await ExecutionService.lookupExecution(
-          token: token,
+        final response = await FirestoreExecutionService.lookupExecution(
           qrCodePayload: qrPayload,
         );
         if (!mounted) return false;
@@ -456,8 +451,7 @@ class _MaintenanceExecutionEntryScreenState
       }
       final equipmentCode = order.equipamento.codigo.trim();
       if (equipmentCode.isNotEmpty) {
-        final response = await ExecutionService.lookupExecution(
-          token: token,
+        final response = await FirestoreExecutionService.lookupExecution(
           equipmentCode: equipmentCode,
         );
         if (!mounted) return false;
@@ -520,6 +514,6 @@ class _MaintenanceExecutionEntryScreenState
   }
 }
 
-extension<T> on Iterable<T> {
+extension IterableExtension<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }

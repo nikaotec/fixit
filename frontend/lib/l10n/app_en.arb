@@ -253,6 +253,7 @@
   "saving": "Saving...",
   "createOrder": "Create Order",
   "responsibleTechnician": "Responsible technician",
+  "assignToMe": "Assign to me",
   "priorityLabel": "Priority",
   "priorityHigh": "High",
   "priorityMedium": "Medium",
@@ -325,5 +326,59 @@
     "placeholders": {
       "code": {}
     }
-  }
+  },
+  "loginFailed": "Login failed. Check your credentials.",
+  "appTagline": "Professional maintenance and service\nmanagement for global teams.",
+  "continueWithGoogle": "Continue with Google",
+  "emailHintLogin": "name@company.com",
+  "percentOfTotal": "{percent} of total",
+  "@percentOfTotal": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "noItemsFound": "No items found",
+  "noEquipmentYet": "No equipment registered yet",
+  "noEquipmentMessage": "Tap the + button to register your first piece of equipment.",
+  "searchingLocation": "Searching location...",
+  "locationUnavailable": "Location unavailable",
+  "locationFetchError": "Error fetching location",
+  "daysAgo": "{count} days",
+  "@daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{count} h",
+  "@hoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minutesAgo": "{count} min",
+  "@minutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "locationCaptured": "Location captured",
+  "locationNotCaptured": "No location set",
+  "noClientSelected": "None (no client)",
+  "basicInfoSection": "BASIC INFORMATION",
+  "clientSection": "CLIENT",
+  "locationSectionLabel": "LOCATION",
+  "capturingLocation": "Capturing location...",
+  "locationMethodGps": "Current GPS",
+  "locationMethodAddress": "Type address",
+  "addressSearchHint": "e.g. 1600 Amphitheatre Parkway, Mountain View",
+  "searchingAddress": "Searching address...",
+  "addressNotFound": "Address not found. Try being more specific.",
+  "selectAddress": "Select the address",
+  "addressSearchError": "Error searching address"
 }

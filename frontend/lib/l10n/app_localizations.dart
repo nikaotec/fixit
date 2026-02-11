@@ -1354,6 +1354,12 @@ abstract class AppLocalizations {
   /// **'Responsible technician'**
   String get responsibleTechnician;
 
+  /// No description provided for @assignToMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign to me'**
+  String get assignToMe;
+
   /// No description provided for @priorityLabel.
   ///
   /// In en, this message translates to:
@@ -1611,6 +1617,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'QR code: {code}'**
   String qrCodeValue(Object code);
+
+  /// No description provided for @loginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed. Check your credentials.'**
+  String get loginFailed;
+
+  /// No description provided for @appTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Professional maintenance and service\nmanagement for global teams.'**
+  String get appTagline;
+
+  /// No description provided for @continueWithGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
+
+  /// No description provided for @emailHintLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'name@company.com'**
+  String get emailHintLogin;
+
+  /// No description provided for @percentOfTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} of total'**
+  String percentOfTotal(Object percent);
+
+  /// No description provided for @noItemsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No items found'**
+  String get noItemsFound;
+
+  /// No description provided for @noEquipmentYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No equipment registered yet'**
+  String get noEquipmentYet;
+
+  /// No description provided for @noEquipmentMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the + button to register your first piece of equipment.'**
+  String get noEquipmentMessage;
+
+  /// No description provided for @searchingLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching location...'**
+  String get searchingLocation;
+
+  /// No description provided for @locationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Location unavailable'**
+  String get locationUnavailable;
+
+  /// No description provided for @locationFetchError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error fetching location'**
+  String get locationFetchError;
+
+  /// No description provided for @daysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days'**
+  String daysAgo(int count);
+
+  /// No description provided for @hoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} h'**
+  String hoursAgo(int count);
+
+  /// No description provided for @minutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String minutesAgo(int count);
+
+  /// No description provided for @locationCaptured.
+  ///
+  /// In en, this message translates to:
+  /// **'Location captured'**
+  String get locationCaptured;
+
+  /// No description provided for @locationNotCaptured.
+  ///
+  /// In en, this message translates to:
+  /// **'No location set'**
+  String get locationNotCaptured;
+
+  /// No description provided for @noClientSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'None (no client)'**
+  String get noClientSelected;
+
+  /// No description provided for @basicInfoSection.
+  ///
+  /// In en, this message translates to:
+  /// **'BASIC INFORMATION'**
+  String get basicInfoSection;
+
+  /// No description provided for @clientSection.
+  ///
+  /// In en, this message translates to:
+  /// **'CLIENT'**
+  String get clientSection;
+
+  /// No description provided for @locationSectionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'LOCATION'**
+  String get locationSectionLabel;
+
+  /// No description provided for @capturingLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Capturing location...'**
+  String get capturingLocation;
+
+  /// No description provided for @locationMethodGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Current GPS'**
+  String get locationMethodGps;
+
+  /// No description provided for @locationMethodAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Type address'**
+  String get locationMethodAddress;
+
+  /// No description provided for @addressSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 1600 Amphitheatre Parkway, Mountain View'**
+  String get addressSearchHint;
+
+  /// No description provided for @searchingAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Searching address...'**
+  String get searchingAddress;
+
+  /// No description provided for @addressNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Address not found. Try being more specific.'**
+  String get addressNotFound;
+
+  /// No description provided for @selectAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the address'**
+  String get selectAddress;
+
+  /// No description provided for @addressSearchError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error searching address'**
+  String get addressSearchError;
 }
 
 class _AppLocalizationsDelegate
