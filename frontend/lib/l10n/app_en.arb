@@ -380,5 +380,9 @@
   "searchingAddress": "Searching address...",
   "addressNotFound": "Address not found. Try being more specific.",
   "selectAddress": "Select the address",
-  "addressSearchError": "Error searching address"
+  "addressSearchError": "Error searching address",
+  "deleteConfirmation": "Delete Item?",
+  "deleteMessage": "Are you sure you want to delete this item? This action cannot be undone.",
+  "delete": "Delete",
+  "itemDeleted": "Item deleted successfully"
 }

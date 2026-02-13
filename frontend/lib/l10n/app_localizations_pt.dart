@@ -898,4 +898,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get addressSearchError => 'Erro ao buscar endereço';
+
+  @override
+  String get deleteConfirmation => 'Excluir Item?';
+
+  @override
+  String get deleteMessage =>
+      'Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.';
+
+  @override
+  String get delete => 'Excluir';
+
+  @override
+  String get itemDeleted => 'Item excluído com sucesso';
 }

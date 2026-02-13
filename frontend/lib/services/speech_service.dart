@@ -10,8 +10,12 @@ class SpeechService {
   Future<bool> ensureInitialized() async {
     if (_initialized) return true;
     try {
-      _initialized = await _speech.initialize();
-    } on PlatformException {
+      _initialized = await _speech.initialize(
+        debugLogging: true,
+        onError: (error) => print('Speech error: $error'),
+      );
+    } on PlatformException catch (e) {
+      print('Speech initialization failed: $e');
       _initialized = false;
     }
     return _initialized;
@@ -22,18 +26,23 @@ class SpeechService {
     String? localeId,
   }) async {
     final available = await ensureInitialized();
-    if (!available) return;
+    if (!available) {
+      print('Speech not available');
+      return;
+    }
     try {
       await _speech.listen(
         localeId: localeId,
-        listenMode: ListenMode.dictation,
         partialResults: true,
         onResult: (result) {
+          print(
+            'Speech result: ${result.recognizedWords} (final: ${result.finalResult})',
+          );
           onResult(result.recognizedWords, result.finalResult);
         },
       );
-    } on PlatformException {
-      // Ignore recognizer-not-available errors to avoid crashing the UI.
+    } on PlatformException catch (e) {
+      print('Speech listen failed: $e');
     }
   }
 

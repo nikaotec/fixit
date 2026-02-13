@@ -149,22 +149,91 @@ class _CreateChecklistTemplateScreenState
     final fields = <Widget>[];
     for (var i = 0; i < _itemControllers.length; i++) {
       fields.add(
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppColors.slate800
+                : AppColors.slate50,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.borderDefaultDark
+                  : AppColors.borderLight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _itemControllers[i],
-                  decoration: InputDecoration(labelText: 'Item ${i + 1}'),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Item ${i + 1}',
+                      style: AppTypography.subtitle2.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _removeItem(i),
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    tooltip: 'Excluir item',
+                    color: AppColors.danger,
+                    padding: EdgeInsets.zero,
+                    constraints: BoxConstraints(),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: () => _removeItem(i),
-                icon: const Icon(Icons.delete_outline),
-                tooltip: 'Excluir item',
-                color: AppColors.danger,
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _itemControllers[i],
+                decoration: InputDecoration(
+                  hintText: 'Describe the task...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.slate900
+                      : Colors.white,
+                ),
+                maxLines: 2,
+                minLines: 1,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildToggle(
+                      label: 'Require Photo',
+                      value: _itemRequiredPhoto[i],
+                      icon: Icons.camera_alt_outlined,
+                      activeColor: AppColors.primary,
+                      onChanged: (val) {
+                        setState(() {
+                          _itemRequiredPhoto[i] = val;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildToggle(
+                      label: 'Critical Item',
+                      value: _itemCritical[i],
+                      icon: Icons.warning_amber_rounded,
+                      activeColor: AppColors.danger,
+                      onChanged: (val) {
+                        setState(() {
+                          _itemCritical[i] = val;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -172,6 +241,57 @@ class _CreateChecklistTemplateScreenState
       );
     }
     return fields;
+  }
+
+  Widget _buildToggle({
+    required String label,
+    required bool value,
+    required IconData icon,
+    required Color activeColor,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+        decoration: BoxDecoration(
+          color: value ? activeColor.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: value
+                ? activeColor
+                : (isDark ? AppColors.slate700 : AppColors.slate300),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: value
+                  ? activeColor
+                  : (isDark ? AppColors.slate400 : AppColors.slate500),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: AppTypography.captionSmall.copyWith(
+                  color: value
+                      ? activeColor
+                      : (isDark ? AppColors.slate300 : AppColors.slate600),
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _addItem() {

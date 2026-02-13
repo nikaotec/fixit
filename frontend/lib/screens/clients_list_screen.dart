@@ -57,6 +57,53 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
     }
   }
 
+  Future<void> _confirmDelete(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: const Text('Are you sure you want to delete this client?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirestoreClientService.delete(id: id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Client deleted successfully'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          _loadClients();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting client: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -198,7 +245,21 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
       itemCount: clients.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        return _ClientCard(client: clients[index]);
+        return GestureDetector(
+          onTap: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => CreateClientScreen(client: clients[index]),
+              ),
+            );
+            if (result == true) _loadClients();
+          },
+          child: _ClientCard(
+            client: clients[index],
+            onDelete: () => _confirmDelete(clients[index]['id']),
+          ),
+        );
       },
     );
   }
@@ -233,8 +294,9 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
 
 class _ClientCard extends StatelessWidget {
   final Map<String, dynamic> client;
+  final VoidCallback onDelete;
 
-  const _ClientCard({required this.client});
+  const _ClientCard({required this.client, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -297,6 +359,13 @@ class _ClientCard extends StatelessWidget {
             ),
           ),
           _TypeChip(label: typeLabel),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline),
+            color: AppColors.danger,
+            tooltip: 'Delete Client',
+          ),
         ],
       ),
     );

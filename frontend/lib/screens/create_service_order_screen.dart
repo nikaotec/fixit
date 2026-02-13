@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../providers/user_provider.dart';
@@ -44,6 +45,8 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
   String _problemLocale = 'pt_BR';
   String _problemPartial = '';
 
+  Timer? _debounceTimer;
+
   @override
   void initState() {
     super.initState();
@@ -51,6 +54,16 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
     _loadVoiceLocale();
     _checkSpeechAvailability();
     _loadData();
+    _problemDescriptionController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        _analyzeText(_problemDescriptionController.text);
+      }
+    });
   }
 
   Future<void> _loadVoiceLocale() async {
@@ -71,6 +84,8 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
+    _problemDescriptionController.removeListener(_onTextChanged);
     _problemDescriptionController.dispose();
     _brandController.dispose();
     _modelController.dispose();
@@ -94,6 +109,7 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
     await _speechService.start(
       localeId: _problemLocale,
       onResult: (words, isFinal) {
+        print('UI received words: "$words"');
         final prefix = _problemBaseText.isEmpty ? '' : '$_problemBaseText ';
         _problemDescriptionController.text = '$prefix$words';
         _problemDescriptionController.selection = TextSelection.fromPosition(
@@ -103,6 +119,7 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
           setState(() => _problemPartial = words);
         }
         if (isFinal && mounted) {
+          _analyzeText(words);
           setState(() {
             _listeningProblem = false;
             _problemPartial = '';
@@ -110,6 +127,267 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
         }
       },
     );
+  }
+
+  void _analyzeText(String text) {
+    if (text.isEmpty) return;
+    final lowerText = text.toLowerCase();
+    bool updated = false;
+
+    // Helper to capitalize first letter
+    String capitalize(String s) {
+      if (s.isEmpty) return s;
+      return s[0].toUpperCase() + s.substring(1);
+    }
+
+    // 1. Analyze Brand (Marca)
+    final commonBrands = [
+      'samsung',
+      'apple',
+      'motorola',
+      'xiaomi',
+      'lg',
+      'sony',
+      'dell',
+      'hp',
+      'lenovo',
+      'asus',
+      'acer',
+      'philips',
+      'consul',
+      'brastemp',
+      'electrolux',
+      'arno',
+      'mondial',
+      'britânia',
+      'epson',
+      'canon',
+      'hp',
+      'multilaser',
+      'positivo',
+    ];
+
+    String? detectedBrand;
+    // Explicit 'marca' check first (stronger signal)
+    final marcaMatch = RegExp(r'marca\s+([\w\d]+)').firstMatch(lowerText);
+    if (marcaMatch != null) {
+      detectedBrand = marcaMatch.group(1);
+    } else {
+      // Implicit check from list
+      for (final brand in commonBrands) {
+        if (lowerText.contains(brand)) {
+          detectedBrand = brand;
+          break; // Stop at first match
+        }
+      }
+    }
+
+    if (detectedBrand != null && _brandController.text.isEmpty) {
+      _brandController.text = capitalize(detectedBrand);
+      updated = true;
+    }
+
+    // 2. Analyze Model (Modelo)
+    // Capture until next keyword or end of string.
+    // We add more stop words to prevent capturing "modelo x com defeito y" as "x com defeito y"
+    final stopWords = [
+      'marca',
+      'defeito',
+      'problema',
+      'dia',
+      'para',
+      'agendar',
+      'prioridade',
+      'urgente',
+      'gravíssimo',
+      'alta',
+      'baixa',
+      'média',
+      'normal',
+      'simples',
+    ];
+    final stopWordsPattern = stopWords.join('|');
+
+    final modeloMatch = RegExp(
+      r'modelo\s+(.+?)(?=\s+(?:' + stopWordsPattern + r')|$)',
+      caseSensitive: false,
+      dotAll: false,
+    ).firstMatch(lowerText);
+
+    if (modeloMatch != null) {
+      final model = modeloMatch.group(1)!.trim();
+      // Filter out small noise
+      if (model.isNotEmpty &&
+          model.length > 1 &&
+          _modelController.text.isEmpty) {
+        _modelController.text = capitalize(model);
+        updated = true;
+      }
+    }
+
+    // 3. Analyze Priority (Prioridade)
+    String? detectedPriority;
+    if (lowerText.contains('urgente') ||
+        lowerText.contains('gravíssimo') ||
+        lowerText.contains('prioridade alta') ||
+        lowerText.contains('alta prioridade')) {
+      detectedPriority = 'ALTA';
+    } else if (lowerText.contains('prioridade baixa') ||
+        lowerText.contains('simples') ||
+        lowerText.contains('tranquilo') ||
+        lowerText.contains('baixa prioridade')) {
+      detectedPriority = 'BAIXA';
+    } else if (lowerText.contains('prioridade média') ||
+        lowerText.contains('normal') ||
+        lowerText.contains('média prioridade')) {
+      detectedPriority = 'MEDIA';
+    }
+
+    if (detectedPriority != null && _priority != detectedPriority) {
+      setState(() => _priority = detectedPriority!);
+      updated = true;
+    }
+
+    // 4. Analyze Date (Data)
+    DateTime? detectedDate;
+
+    // Relative keywords
+    if (lowerText.contains('amanhã')) {
+      detectedDate = DateTime.now().add(const Duration(days: 1));
+    } else if (lowerText.contains('hoje')) {
+      detectedDate = DateTime.now();
+    } else {
+      // Weekdays
+      final weekdays = {
+        'segunda': DateTime.monday,
+        'terça': DateTime.tuesday,
+        'terca': DateTime.tuesday,
+        'quarta': DateTime.wednesday,
+        'quinta': DateTime.thursday,
+        'sexta': DateTime.friday,
+        'sábado': DateTime.saturday,
+        'sabado': DateTime.saturday,
+        'domingo': DateTime.sunday,
+      };
+
+      for (final entry in weekdays.entries) {
+        if (lowerText.contains(entry.key)) {
+          final now = DateTime.now();
+          final todayWeekday = now.weekday;
+          final targetWeekday = entry.value;
+
+          // Calculate days until target
+          int daysUntil = targetWeekday - todayWeekday;
+          if (daysUntil <= 0) {
+            daysUntil += 7; // Next week occurrence
+          }
+
+          // Handle "próxima" (start searching AFTER the first occurrence)
+          // E.g. If today is Monday, "próxima segunda" usually means next week's Monday (7 days),
+          // but "segunda" might mean today? Context matters.
+          // Let's assume: "segunda" = coming one. "próxima segunda" = coming one + 7 days?
+          // NO, usually "próxima segunda" is just the coming one if we are far away,
+          // or the *next* next if we are close.
+          // Let's keep it simple: "próxima" adds 7 days if found before the day name?
+          // Actually, "próxima segunda" usually just emphasizes the coming one in Portuguese context
+          // UNLESS we are already on Sunday, then "segunda" is tomorrow, "próxima" is +8 days.
+          // Let's stick to: Find next occurrence. If "próxima" is detected and the next occurrence is very close (e.g. tomorrow), add 7?
+          // Or simpler: Just find next occurrence.
+
+          if (lowerText.contains('próxima ${entry.key}') ||
+              lowerText.contains('proxima ${entry.key}')) {
+            // If user explicitly says "next", ensure at least a buffer?
+            // Logic: If today is Sunday(7), "Próxima Segunda"(1) is day+1.
+            // If today is Monday(1), "Próxima Segunda" is day+7.
+            // Let's just blindly rely on the calculated next occurrence for now,
+            // unless we want to support "na outra segunda".
+          }
+
+          detectedDate = now.add(Duration(days: daysUntil));
+          break;
+        }
+      }
+    }
+
+    // Explicit date 'dia 15'
+    if (detectedDate == null) {
+      final dateMatch = RegExp(
+        r'dia\s+(\d{1,2})(?:\/(\d{1,2}))?',
+      ).firstMatch(lowerText);
+      if (dateMatch != null) {
+        final now = DateTime.now();
+        final day = int.parse(dateMatch.group(1)!);
+        final month = dateMatch.group(2) != null
+            ? int.parse(dateMatch.group(2)!)
+            : now.month;
+        var year = now.year;
+        detectedDate = DateTime(year, month, day, now.hour, now.minute);
+      }
+    }
+
+    // 5. Analyze Time (Horário)
+    TimeOfDay? detectedTime;
+
+    // Regex for time: "às 14h", "as 14:30", "14h30", "14:00"
+    // We look for patterns like: (às|as)\s*(\d{1,2})[:hH]?(\d{2})?
+    final timeMatch = RegExp(
+      r'(?:às|as|hora|horas)\s*(\d{1,2})(?:[:hH](\d{2}))?',
+      caseSensitive: false,
+    ).firstMatch(lowerText);
+
+    if (timeMatch != null) {
+      final hour = int.parse(timeMatch.group(1)!);
+      final minute = timeMatch.group(2) != null
+          ? int.parse(timeMatch.group(2)!)
+          : 0;
+      if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+        detectedTime = TimeOfDay(hour: hour, minute: minute);
+      }
+    }
+
+    if (detectedTime != null) {
+      final baseDate = detectedDate ?? _scheduledFor ?? DateTime.now();
+      final newDateTime = DateTime(
+        baseDate.year,
+        baseDate.month,
+        baseDate.day,
+        detectedTime.hour,
+        detectedTime.minute,
+      );
+
+      if (_scheduledFor == null || _scheduledFor != newDateTime) {
+        setState(() => _scheduledFor = newDateTime);
+        updated = true;
+      }
+    } else if (detectedDate != null) {
+      // Only date changed, preserve existing time or default to 08:00
+      final existingTime = _scheduledFor != null
+          ? TimeOfDay(hour: _scheduledFor!.hour, minute: _scheduledFor!.minute)
+          : const TimeOfDay(hour: 8, minute: 0);
+
+      final newDateTime = DateTime(
+        detectedDate.year,
+        detectedDate.month,
+        detectedDate.day,
+        existingTime.hour,
+        existingTime.minute,
+      );
+
+      if (_scheduledFor == null || _scheduledFor != newDateTime) {
+        setState(() => _scheduledFor = newDateTime);
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Dados extraídos do texto automaticamente ✨'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Widget _buildSectionHeader(String title, bool isDark) {
@@ -315,7 +593,6 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
             ? {'id': selectedTech.id, 'name': selectedTech.name}
             : null,
       );
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.orderCreatedSuccess),
@@ -344,7 +621,57 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
     }
   }
 
-  @override
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _scheduledFor ?? now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() {
+        final existingTime = _scheduledFor != null
+            ? TimeOfDay(
+                hour: _scheduledFor!.hour,
+                minute: _scheduledFor!.minute,
+              )
+            : const TimeOfDay(hour: 8, minute: 0);
+
+        _scheduledFor = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          existingTime.hour,
+          existingTime.minute,
+        );
+      });
+    }
+  }
+
+  Future<void> _pickTime() async {
+    final now = TimeOfDay.now();
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _scheduledFor != null
+          ? TimeOfDay(hour: _scheduledFor!.hour, minute: _scheduledFor!.minute)
+          : now,
+    );
+
+    if (picked != null) {
+      final baseDate = _scheduledFor ?? DateTime.now();
+      setState(() {
+        _scheduledFor = DateTime(
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+          picked.hour,
+          picked.minute,
+        );
+      });
+    }
+  }
+
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = AppLocalizations.of(context)!;
@@ -522,50 +849,90 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
                       _buildTechnicianSelection(l10n, isDark),
 
                       _buildSectionHeader(l10n.scheduledDate, isDark),
-                      InkWell(
-                        onTap: _pickDate,
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.surfaceDarkTheme
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isDark
-                                  ? AppColors.borderDefaultDark
-                                  : AppColors.borderLight,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_month,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                _scheduledFor == null
-                                    ? l10n.selectDate
-                                    : _scheduledFor!
-                                          .toLocal()
-                                          .toString()
-                                          .substring(0, 16),
-                                style: AppTypography.bodyTextSmall.copyWith(
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: _pickDate,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
                                   color: isDark
-                                      ? Colors.white
-                                      : AppColors.textPrimary,
+                                      ? AppColors.surfaceDarkTheme
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? AppColors.borderDefaultDark
+                                        : AppColors.borderLight,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_month,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _scheduledFor == null
+                                          ? l10n.selectDate
+                                          : '${_scheduledFor!.day.toString().padLeft(2, '0')}/${_scheduledFor!.month.toString().padLeft(2, '0')}/${_scheduledFor!.year}',
+                                      style: AppTypography.bodyTextSmall
+                                          .copyWith(
+                                            color: isDark
+                                                ? Colors.white
+                                                : AppColors.textPrimary,
+                                          ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const Spacer(),
-                              Icon(
-                                Icons.chevron_right,
-                                color: AppColors.slate400,
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: InkWell(
+                              onTap: _pickTime,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.surfaceDarkTheme
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? AppColors.borderDefaultDark
+                                        : AppColors.borderLight,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      color: AppColors.primary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _scheduledFor == null
+                                          ? 'Horário' // TODO generic label if text not set
+                                          : '${_scheduledFor!.hour.toString().padLeft(2, '0')}:${_scheduledFor!.minute.toString().padLeft(2, '0')}',
+                                      style: AppTypography.bodyTextSmall
+                                          .copyWith(
+                                            color: isDark
+                                                ? Colors.white
+                                                : AppColors.textPrimary,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -776,26 +1143,6 @@ class _CreateServiceOrderScreenState extends State<CreateServiceOrderScreen> {
             : Text(l10n.createOrder, style: AppTypography.button),
       ),
     );
-  }
-
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: now.subtract(const Duration(days: 1)),
-      lastDate: now.add(const Duration(days: 365)),
-    );
-    if (date == null) return;
-    setState(() {
-      _scheduledFor = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        now.hour,
-        now.minute,
-      );
-    });
   }
 
   List<DropdownMenuItem<String>> _buildTechnicianItems() {

@@ -329,5 +329,9 @@
   "searchingAddress": "Buscando endereço...",
   "addressNotFound": "Endereço não encontrado. Tente ser mais específico.",
   "selectAddress": "Selecione o endereço",
-  "addressSearchError": "Erro ao buscar endereço"
+  "addressSearchError": "Erro ao buscar endereço",
+  "deleteConfirmation": "Excluir Item?",
+  "deleteMessage": "Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.",
+  "delete": "Excluir",
+  "itemDeleted": "Item excluído com sucesso"
 }

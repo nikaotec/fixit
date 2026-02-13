@@ -137,6 +137,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
+  country_picker:
+    dependency: "direct main"
+    description:
+      name: country_picker
+      sha256: "9b14c04f9a35e99f6de6bcbc453a556bb98345aecb481c7a0e843c94c2bee1f8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.27"
   cross_file:
     dependency: transitive
     description:
@@ -217,6 +225,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.3"
+  dlibphonenumber:
+    dependency: transitive
+    description:
+      name: dlibphonenumber
+      sha256: c24a8e0223fcc30f2d456e7ed9556be2fd0ecb71ce7d94bce35882771e9abd0d
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.56"
+  equatable:
+    dependency: transitive
+    description:
+      name: equatable
+      sha256: "3e0141505477fd8ad55d6eb4e7776d3fe8430be8e497ccb1521370c3f21a3e2b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.8"
   fake_async:
     dependency: transitive
     description:
@@ -709,6 +733,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.20.2"
+  intl_phone_number_input:
+    dependency: "direct main"
+    description:
+      name: intl_phone_number_input
+      sha256: "9d4d7f174cfc3a85b238e0b465ec0e7232fc0815a779e5a58fbf118dee26dfa0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.5"
   json_annotation:
     dependency: transitive
     description:
@@ -981,6 +1013,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  protobuf:
+    dependency: transitive
+    description:
+      name: protobuf
+      sha256: "75ec242d22e950bdcc79ee38dd520ce4ee0bc491d7fadc4ea47694604d22bf06"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.0"
   provider:
     dependency: "direct main"
     description:
@@ -1202,6 +1242,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.1"
+  universal_io:
+    dependency: transitive
+    description:
+      name: universal_io
+      sha256: f63cbc48103236abf48e345e07a03ce5757ea86285ed313a6a032596ed9301e2
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.1"
   url_launcher_linux:
     dependency: transitive
     description:

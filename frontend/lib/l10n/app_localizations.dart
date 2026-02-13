@@ -1785,6 +1785,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error searching address'**
   String get addressSearchError;
+
+  /// No description provided for @deleteConfirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Item?'**
+  String get deleteConfirmation;
+
+  /// No description provided for @deleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete this item? This action cannot be undone.'**
+  String get deleteMessage;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @itemDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Item deleted successfully'**
+  String get itemDeleted;
 }
 
 class _AppLocalizationsDelegate

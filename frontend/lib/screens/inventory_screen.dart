@@ -68,6 +68,54 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }
   }
 
+  Future<void> _confirmDelete(BuildContext context, String id) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteConfirmation),
+        content: Text(l10n.deleteMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              l10n.delete,
+              style: const TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirestoreEquipmentService.deleteEquipamento(id: id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.itemDeleted),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          _loadEquipment();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting item: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   void _filterList() {
     final query = _searchController.text.toLowerCase();
     setState(() {
@@ -526,6 +574,19 @@ class _InventoryScreenState extends State<InventoryScreen> {
                           size: 22,
                         ),
                         tooltip: l10n.generateQr,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () => _confirmDelete(context, item['id']),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: AppColors.danger,
+                          size: 22,
+                        ),
+                        tooltip: l10n.delete,
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),

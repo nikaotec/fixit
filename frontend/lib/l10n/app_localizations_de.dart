@@ -899,4 +899,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get addressSearchError => 'Error searching address';
+
+  @override
+  String get deleteConfirmation => 'Element löschen?';
+
+  @override
+  String get deleteMessage =>
+      'Möchten Sie dieses Element wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get delete => 'Löschen';
+
+  @override
+  String get itemDeleted => 'Element erfolgreich gelöscht';
 }

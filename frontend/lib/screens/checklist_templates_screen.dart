@@ -48,6 +48,53 @@ class _ChecklistTemplatesScreenState extends State<ChecklistTemplatesScreen> {
     }
   }
 
+  Future<void> _confirmDelete(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Delete'),
+        content: const Text('Are you sure you want to delete this template?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirestoreChecklistService.delete(id: id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Template deleted successfully'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          _loadTemplates();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting template: $e'),
+              backgroundColor: AppColors.danger,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -187,7 +234,12 @@ class _ChecklistTemplatesScreenState extends State<ChecklistTemplatesScreen> {
                     ],
                   ),
                 ),
-                OutlinedButton(onPressed: () {}, child: const Text('Use')),
+                IconButton(
+                  onPressed: () => _confirmDelete(item.id),
+                  icon: const Icon(Icons.delete_outline),
+                  color: AppColors.danger,
+                  tooltip: 'Delete Template',
+                ),
               ],
             ),
           ),
